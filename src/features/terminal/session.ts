@@ -16,6 +16,7 @@ import type { HighlightRule } from "./highlight-rules";
 
 export const CONNECT_TIMEOUT_MS = 45_000;
 export const MAX_PENDING_INPUT_BYTES = 1024 * 1024;
+export const COMMAND_TERMINATOR = "\r";
 const COLUMN_RESIZE_DEBOUNCE_MS = 100;
 
 export function parseTerminalDirectory(data: string): string | undefined {
@@ -211,6 +212,18 @@ export class TerminalSession {
   }
 
   send(data: string) {
+    this.enqueue(data, true);
+  }
+
+  sendCommand(command: string) {
+    this.commands.noteCommand(command);
+    this.enqueue(
+      `${command.replace(/[\r\n]+$/, "")}${COMMAND_TERMINATOR}`,
+      false,
+    );
+  }
+
+  private enqueue(data: string, trackInput: boolean) {
     if (this.disposed || this.ended || data.length === 0) return;
     const dataBytes = new TextEncoder().encode(data).byteLength;
     if (this.pendingInputBytes + dataBytes > MAX_PENDING_INPUT_BYTES) {
@@ -221,15 +234,10 @@ export class TerminalSession {
       );
       return;
     }
-    this.commands.noteInput(data);
+    if (trackInput) this.commands.noteInput(data);
     this.pendingInput += data;
     this.pendingInputBytes += dataBytes;
     this.flushInput();
-  }
-
-  sendCommand(command: string) {
-    this.commands.noteCommand(command);
-    this.send(command.endsWith("\n") ? command : `${command}\n`);
   }
 
   focus() {
