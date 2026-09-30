@@ -34,6 +34,7 @@ vi.mock("./xterm", () => ({
 
 import {
   CONNECT_TIMEOUT_MS,
+  INPUT_FLUSH_DELAY_MS,
   MAX_PENDING_INPUT_BYTES,
   TerminalSession,
   parseTerminalDirectory,
@@ -356,6 +357,20 @@ describe("command submission", () => {
 
     expect(noteInput).toHaveBeenCalledOnce();
     expect(noteInput).toHaveBeenCalledWith("x");
+    session.dispose();
+  });
+
+  it("batches rapid typed input without changing its order", async () => {
+    vi.useFakeTimers();
+    const { session, current } = await connectedSession();
+
+    session.send("c");
+    session.send("d");
+
+    expect(current.send).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(INPUT_FLUSH_DELAY_MS);
+    expect(current.send).toHaveBeenCalledOnce();
+    expect(current.send).toHaveBeenCalledWith("cd");
     session.dispose();
   });
 });
