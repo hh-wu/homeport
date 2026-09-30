@@ -289,7 +289,7 @@ async fn run_session_inner(
 
     if let Some(command) = &startup_command {
         if !command.trim().is_empty() {
-            let line = format!("{command}\n");
+            let line = startup_line(command);
             channel.data(line.as_bytes()).await?;
         }
     }
@@ -331,9 +331,21 @@ async fn run_session_inner(
     Ok(())
 }
 
+fn startup_line(command: &str) -> String {
+    format!("{}\r", command.trim_end_matches(['\r', '\n']))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{SessionCommand, SessionManager, INPUT_QUEUE_CAPACITY};
+    use super::{startup_line, SessionCommand, SessionManager, INPUT_QUEUE_CAPACITY};
+
+    #[test]
+    fn startup_line_ends_with_a_carriage_return() {
+        assert_eq!(startup_line("uptime"), "uptime\r");
+        assert_eq!(startup_line("uptime\n"), "uptime\r");
+        assert_eq!(startup_line("uptime\r"), "uptime\r");
+        assert_eq!(startup_line("uptime\r\n"), "uptime\r");
+    }
 
     #[test]
     fn newer_reservation_cancels_the_previous_attempt() {
