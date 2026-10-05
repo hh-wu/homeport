@@ -432,6 +432,10 @@ export interface RcProxy {
   todayTrafficIn: number;
   todayTrafficOut: number;
   lastStartTime: string;
+  localIp: string;
+  localPort: number | null;
+  remotePort: number | null;
+  accessPort: number | null;
 }
 
 export interface RcProxyType {
@@ -442,6 +446,7 @@ export interface RcProxyType {
 export interface RcServerState {
   version: string;
   bindPort: number;
+  relayHost: string;
   clientCounts: number;
   curConns: number;
   totalTrafficIn: number;
@@ -465,6 +470,7 @@ export interface RcConfig {
   instanceId: string;
   region: string;
   pricePerGb: number;
+  portMap: string;
 }
 
 export type AiProtocol = "openai" | "anthropic";
