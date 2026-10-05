@@ -64,8 +64,6 @@ const BSS_HOST: &str = "business.aliyuncs.com";
 const DEFAULT_PORT_MAP: &str = "home-rdp = 13389
 home-ssh = 10022";
 
-const DEFAULT_VISITOR_CONFIG: &str = r"C:\Users\user\Documents\deepseek-harness\default-workspace\远程访问配置\frpc-visitor-4090-独立版.toml";
-
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RcConfig {
@@ -103,7 +101,7 @@ impl Default for RcConfig {
             region: "cn-shanghai".into(),
             price_per_gb: 0.8,
             port_map: DEFAULT_PORT_MAP.into(),
-            visitor_config_path: DEFAULT_VISITOR_CONFIG.into(),
+            visitor_config_path: String::new(),
         }
     }
 }
@@ -747,6 +745,14 @@ fn parse_provider_config(text: &str) -> HashMap<String, (String, u16)> {
     ports
 }
 
+fn visitor_config_path(config: &RcConfig) -> &str {
+    if config.visitor_config_path.trim().is_empty() {
+        &config.frpc_config_path
+    } else {
+        &config.visitor_config_path
+    }
+}
+
 fn visitor_access_ports(config_path: &str) -> HashMap<String, u16> {
     fs::read_to_string(expand_home(config_path))
         .map(|text| parse_visitor_config(&text))
@@ -923,7 +929,7 @@ fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
     };
     let local_ports = provider_local_ports(&config.frpc_config_path);
     let access_ports = parse_port_map(&config.port_map, false)?;
-    let visitor_ports = visitor_access_ports(&config.visitor_config_path);
+    let visitor_ports = visitor_access_ports(visitor_config_path(config));
 
     if let Some(section) = chunks.next().and_then(parse_json) {
         state.version = section["version"].as_str().unwrap_or("").into();
@@ -1121,8 +1127,8 @@ fn verify_frpc(config: &RcConfig) -> RcVerify {
     let mut details = Vec::new();
     let mut ok = true;
     for (label, path) in [
-        ("frpc", &config.frpc_config_path),
-        ("visitor", &config.visitor_config_path),
+        ("frpc", config.frpc_config_path.as_str()),
+        ("visitor", visitor_config_path(config)),
     ] {
         let path = path.trim();
         if path.is_empty() {
