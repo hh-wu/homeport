@@ -87,7 +87,22 @@ pnpm check:conventions
 pnpm typecheck
 pnpm test
 pnpm lint
+cd src-tauri; cargo test --lib
 ```
+
+当前基线（Windows，2026-10-05）：
+
+| 检查 | 结果 |
+|---|---|
+| `pnpm typecheck` | 通过 |
+| `pnpm format:check` | 通过 |
+| `pnpm check:conventions` | 通过 |
+| `pnpm lint` | 通过 |
+| `pnpm test` | 74 文件 / 514 用例全通过 |
+| `cargo test --lib` | 185 通过 / **13 失败** |
+
+那 13 个失败是**上游在 Windows 上的既有问题**，与本 fork 无关：原始检出跑同一套用例，失败数量与名单完全一致。
+集中在 `sshkey`、`legacy`、`sync`（依赖 POSIX 文件权限）、`db`（含特殊字符的路径）、`tasks`、`ssh_config`。
 
 ## 许可
 
