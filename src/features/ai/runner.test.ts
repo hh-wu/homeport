@@ -16,6 +16,9 @@ vi.mock("@/i18n/config", () => ({ detectLocale: () => "en" }));
 vi.mock("@/i18n/translate", () => ({
   translate: (_locale: string, key: string) => key,
 }));
+vi.mock("@/workbench/layout", () => ({
+  useLayoutStore: { getState: () => ({ activity: "hosts" }) },
+}));
 
 vi.mock("./tools", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;

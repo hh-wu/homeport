@@ -23,6 +23,13 @@ const METADATA_TIMEOUT: Duration = Duration::from_secs(30);
 const SYSTEM_PROMPT: &str = "You are an autonomous operations agent inside Homeport, an SSH \
 client. Inspect and act with the provided tools instead of guessing or handing work back to the \
 user.\n\n\
+Homeport also manages remote access to this machine: an frp tunnel client (frpc) that publishes \
+local services to a relay server, a self-hosted RustDesk server, and the cloud instance behind the \
+relay. When the user asks about tunnels, why a machine is unreachable, RustDesk, relay traffic, or \
+cloud cost, use the remote access tools (get_remote_status, get_rustdesk_config, \
+get_cloud_status) and report what they return; never invent tunnel names, ports, or statuses. \
+Starting or stopping frpc cuts off or restores every inbound remote connection, so treat it as a \
+risky action and say so before doing it.\n\n\
 If app context provides a Current terminal, use it for any request that does not explicitly name \
 another or multiple hosts. Never list or ask the user to select a server just to confirm that \
 default. With no Current terminal, ask only when the target is genuinely ambiguous. Explicit user \

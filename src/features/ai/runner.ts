@@ -2,6 +2,7 @@ import { detectLocale } from "@/i18n/config";
 import { ipc } from "@/lib/ipc";
 import { errorCode, errorMessage } from "@/lib/toast";
 import type { AiChatMessage, AiModelLimits, AiToolCall } from "@/types/models";
+import { useLayoutStore } from "@/workbench/layout";
 import { findPane, targetPaneId, useTabsStore } from "@/workbench/tabs";
 import {
   estimateTextTokens,
@@ -96,9 +97,15 @@ function buildContext(
 ): string {
   const state = useTabsStore.getState();
   const current = findPane(state.tabs, terminalId);
+  const activity = useLayoutStore.getState().activity;
   const lines = [
     `App: Homeport v${__APP_VERSION__}, a desktop SSH client.`,
     `UI language: ${detectLocale()}.`,
+    `Active sidebar view: ${activity}.${
+      activity === "remote"
+        ? " The user is looking at the remote access panel (frpc tunnels, RustDesk, cloud metrics); use the remote access tools to answer questions about it instead of guessing."
+        : ""
+    }`,
     current
       ? `Current terminal (default target): ${JSON.stringify({
           id: current.id,
