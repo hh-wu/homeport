@@ -108,6 +108,7 @@ export const en = {
     serverTraffic: "Total traffic (in/out)",
     online: "Online",
     offline: "Offline",
+    stale: "Leftover",
     proxyNone: "No proxies on the server",
     tabSetup: "Current setup",
     tabLog: "Log",

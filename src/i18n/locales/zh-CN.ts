@@ -105,6 +105,7 @@ export const zhCN: Dictionary = {
     serverTraffic: "累计流量（入/出）",
     online: "在线",
     offline: "离线",
+    stale: "残留",
     proxyNone: "服务器上没有任何代理",
     tabSetup: "现有配置",
     tabLog: "日志",
