@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
+import { FolderOpen } from "lucide-react";
 
 import { Button, Field, Input, Spinner, Textarea } from "@/components/ui";
 import { useI18n, type TKey } from "@/i18n";
@@ -9,27 +11,43 @@ import { SETTINGS_GROUP_STACK_CLASS, SettingsGroup } from "./SettingsGroup";
 
 type Draft = Record<keyof RcConfig, string>;
 
+type FieldSpec = {
+  key: keyof RcConfig;
+  labelKey: TKey;
+  hintKey?: TKey;
+  numeric?: boolean;
+  picker?: { titleKey: TKey; extensions?: string[] };
+};
+
 const GROUPS: {
   titleKey: TKey;
-  fields: {
-    key: keyof RcConfig;
-    labelKey: TKey;
-    hintKey?: TKey;
-    numeric?: boolean;
-  }[];
+  fields: FieldSpec[];
   longFields?: { key: keyof RcConfig; labelKey: TKey; hintKey: TKey }[];
 }[] = [
   {
     titleKey: "settings.remote.frpc",
     fields: [
-      { key: "frpcPath", labelKey: "remote.cfgFrpcPath" },
-      { key: "frpcConfigPath", labelKey: "remote.cfgFrpcConfig" },
+      {
+        key: "frpcPath",
+        labelKey: "remote.cfgFrpcPath",
+        picker: { titleKey: "remote.pickFrpc", extensions: ["exe"] },
+      },
+      {
+        key: "frpcConfigPath",
+        labelKey: "remote.cfgFrpcConfig",
+        picker: { titleKey: "remote.pickFrpcConfig", extensions: ["toml"] },
+      },
       {
         key: "visitorConfigPath",
         labelKey: "remote.cfgVisitorConfig",
         hintKey: "remote.cfgVisitorConfigHint",
+        picker: { titleKey: "remote.pickVisitorConfig", extensions: ["toml"] },
       },
-      { key: "logPath", labelKey: "remote.cfgLogPath" },
+      {
+        key: "logPath",
+        labelKey: "remote.cfgLogPath",
+        picker: { titleKey: "remote.pickLog" },
+      },
     ],
   },
   {
@@ -37,7 +55,11 @@ const GROUPS: {
     fields: [
       { key: "relayHost", labelKey: "remote.cfgRelayHost" },
       { key: "sshUser", labelKey: "remote.cfgSshUser" },
-      { key: "sshKeyPath", labelKey: "remote.cfgSshKey" },
+      {
+        key: "sshKeyPath",
+        labelKey: "remote.cfgSshKey",
+        picker: { titleKey: "remote.pickSshKey" },
+      },
     ],
   },
   {
@@ -127,6 +149,38 @@ function RemoteForm({ config }: { config: RcConfig }) {
     });
   };
 
+  const commitIfChanged = (next: Draft) => {
+    if (JSON.stringify(next) !== JSON.stringify(toDraft(config))) {
+      commit(next);
+    }
+  };
+
+  const browse = async (field: FieldSpec) => {
+    if (!field.picker) return;
+    try {
+      const selected = await open({
+        title: t(field.picker.titleKey),
+        multiple: false,
+        filters: field.picker.extensions
+          ? [
+              {
+                name: field.picker.extensions.join("/").toUpperCase(),
+                extensions: field.picker.extensions,
+              },
+              { name: t("remote.filterAll"), extensions: ["*"] },
+            ]
+          : [{ name: t("remote.filterAll"), extensions: ["*"] }],
+      });
+      const path = Array.isArray(selected) ? selected[0] : selected;
+      if (!path) return;
+      const next = { ...draft, [field.key]: path };
+      setDraft(next);
+      commitIfChanged(next);
+    } catch (error) {
+      toast.error(t("remote.pickFailed"), errorMessage(error));
+    }
+  };
+
   return (
     <div className={SETTINGS_GROUP_STACK_CLASS}>
       {GROUPS.map((group) => (
@@ -137,25 +191,47 @@ function RemoteForm({ config }: { config: RcConfig }) {
               label={t(field.labelKey)}
               hint={field.hintKey ? t(field.hintKey) : undefined}
             >
-              <Input
-                value={draft[field.key]}
-                inputMode={field.numeric ? "decimal" : undefined}
-                spellCheck={false}
-                autoComplete="off"
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    [field.key]: event.target.value,
-                  }))
-                }
-                onBlur={() => {
-                  if (
-                    JSON.stringify(draft) !== JSON.stringify(toDraft(config))
-                  ) {
-                    commit(draft);
+              {field.picker ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={draft[field.key]}
+                    spellCheck={false}
+                    autoComplete="off"
+                    className="flex-1"
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        [field.key]: event.target.value,
+                      }))
+                    }
+                    onBlur={() => commitIfChanged(draft)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => void browse(field)}
+                  >
+                    <FolderOpen />
+                    {t("remote.browse")}
+                  </Button>
+                </div>
+              ) : (
+                <Input
+                  value={draft[field.key]}
+                  inputMode={field.numeric ? "decimal" : undefined}
+                  spellCheck={false}
+                  autoComplete="off"
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      [field.key]: event.target.value,
+                    }))
                   }
-                }}
-              />
+                  onBlur={() => commitIfChanged(draft)}
+                />
+              )}
             </Field>
           ))}
           {group.longFields?.map((field) => (
@@ -176,13 +252,7 @@ function RemoteForm({ config }: { config: RcConfig }) {
                     [field.key]: event.target.value,
                   }))
                 }
-                onBlur={() => {
-                  if (
-                    JSON.stringify(draft) !== JSON.stringify(toDraft(config))
-                  ) {
-                    commit(draft);
-                  }
-                }}
+                onBlur={() => commitIfChanged(draft)}
               />
             </Field>
           ))}
