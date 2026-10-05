@@ -79,7 +79,7 @@ export const useZoomStore = create<ZoomState>()(
       };
     },
     {
-      name: "sageport.zoom",
+      name: "Homeport.zoom",
       merge: (persisted, current) => ({
         ...current,
         level: normalizeZoomLevel(

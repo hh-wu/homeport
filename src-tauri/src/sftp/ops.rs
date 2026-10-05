@@ -138,10 +138,10 @@ pub async fn remote_write(
         None
     };
     let parent = parent_remote(path);
-    let temp = join_remote(&parent, &format!(".sageport-save-{}", uuid::Uuid::new_v4()));
+    let temp = join_remote(&parent, &format!(".homeport-save-{}", uuid::Uuid::new_v4()));
     let backup = join_remote(
         &parent,
-        &format!(".sageport-backup-{}", uuid::Uuid::new_v4()),
+        &format!(".homeport-backup-{}", uuid::Uuid::new_v4()),
     );
 
     let write_result = async {
@@ -224,7 +224,7 @@ pub fn local_write(path: &str, data: &[u8], expected: Option<&[u8]>) -> AppResul
 
     let target = Path::new(path);
     let parent = target.parent().unwrap_or_else(|| Path::new("."));
-    let temp = parent.join(format!(".sageport-save-{}", uuid::Uuid::new_v4()));
+    let temp = parent.join(format!(".homeport-save-{}", uuid::Uuid::new_v4()));
     let mut file = OpenOptions::new()
         .create_new(true)
         .write(true)
@@ -243,7 +243,7 @@ pub fn local_write(path: &str, data: &[u8], expected: Option<&[u8]>) -> AppResul
         #[cfg(windows)]
         {
             if target.exists() {
-                let backup = parent.join(format!(".sageport-backup-{}", uuid::Uuid::new_v4()));
+                let backup = parent.join(format!(".homeport-backup-{}", uuid::Uuid::new_v4()));
                 fs::rename(target, &backup)?;
                 if let Err(error) = fs::rename(&temp, target) {
                     let _ = fs::rename(&backup, target);
@@ -411,7 +411,7 @@ mod tests {
     #[test]
     fn directory_symlinks_are_browsable_but_delete_does_not_follow_them() {
         let root = std::env::temp_dir().join(format!(
-            "sageport-sftp-{}-{}",
+            "homeport-sftp-{}-{}",
             std::process::id(),
             std::thread::current().name().unwrap_or("test")
         ));
@@ -447,7 +447,7 @@ mod tests {
     #[test]
     fn text_writes_replace_shorter_content_and_detect_external_changes() {
         let root = std::env::temp_dir().join(format!(
-            "sageport-edit-{}-{}",
+            "homeport-edit-{}-{}",
             std::process::id(),
             uuid::Uuid::new_v4()
         ));

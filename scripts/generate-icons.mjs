@@ -69,7 +69,7 @@ function toMacosSvg(svg) {
   );
 }
 
-const tmp = mkdtempSync(join(tmpdir(), "sageport-icon-"));
+const tmp = mkdtempSync(join(tmpdir(), "homeport-icon-"));
 
 const rasterize = (svg, name, size) => {
   const svgPath = join(tmp, `${name}.svg`);

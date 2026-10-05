@@ -32,7 +32,7 @@ jobs:
       - name: Conventions
         run: pnpm check:conventions
         env:
-          SAGEPORT_RELEASE_TAG: ${{ inputs.ref }}
+          HOMEPORT_RELEASE_TAG: ${{ inputs.ref }}
 
       - name: Typecheck
         run: pnpm typecheck

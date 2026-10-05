@@ -75,7 +75,7 @@ export function AboutSection() {
       <section className="ui-surface-card ui-card-padding flex flex-col gap-[var(--content-gap)] sm:flex-row sm:items-center">
         <img src="/app-icon.png" alt="" className="size-14 shrink-0" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold text-foreground">Sageport</h3>
+          <h3 className="text-base font-semibold text-foreground">Homeport</h3>
           <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1.5 text-sm">
             <MetaRow term={t("settings.about.version")}>
               {__APP_VERSION__}
@@ -87,6 +87,9 @@ export function AboutSection() {
               <MetaLink label={LICENSE_NAME} url={LICENSE_URL} />
             </MetaRow>
           </dl>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("settings.about.forkNote")}
+          </p>
         </div>
       </section>
 

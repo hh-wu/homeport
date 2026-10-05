@@ -35,7 +35,7 @@ export const useFontStore = create<FontState>()(
       },
     }),
     {
-      name: "sageport.font",
+      name: "Homeport.font",
       merge: (persisted, current) => ({
         ...current,
         family: normalizeFontFamily(

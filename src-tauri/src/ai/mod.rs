@@ -20,7 +20,7 @@ const MAX_ERROR_MESSAGE_CHARS: usize = 4_096;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const METADATA_TIMEOUT: Duration = Duration::from_secs(30);
 
-const SYSTEM_PROMPT: &str = "You are an autonomous operations agent inside Sageport, an SSH \
+const SYSTEM_PROMPT: &str = "You are an autonomous operations agent inside Homeport, an SSH \
 client. Inspect and act with the provided tools instead of guessing or handing work back to the \
 user.\n\n\
 If app context provides a Current terminal, use it for any request that does not explicitly name \

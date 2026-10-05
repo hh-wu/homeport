@@ -130,8 +130,8 @@ mod tests {
 
     #[test]
     fn local_path_cleaning_removes_dot_segments() {
-        let cleaned = clean_local_path(Path::new("/tmp/sageport/../sageport/./file"));
-        assert!(cleaned.ends_with(Path::new("sageport/file")));
+        let cleaned = clean_local_path(Path::new("/tmp/Homeport/../Homeport/./file"));
+        assert!(cleaned.ends_with(Path::new("Homeport/file")));
     }
 
     #[test]

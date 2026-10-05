@@ -113,7 +113,7 @@ async function updateApplicationSettings(
     const nextFamily = familyId ?? current.familyId;
     const preference = { familyId: nextFamily, mode: mode ?? current.mode };
     const serialized = serializeThemePreference(preference);
-    localStorage.setItem("sageport.theme", serialized);
+    localStorage.setItem("homeport.theme", serialized);
     await ipc.settings.set("general.theme", serialized);
     publishThemePreference(preference);
   }
@@ -618,7 +618,7 @@ export const updateTools: AiTool[] = [
   {
     spec: {
       name: "check_for_updates",
-      description: "Check for a newer Sageport release.",
+      description: "Check for a newer Homeport release.",
       parameters: EMPTY_PARAMETERS,
     },
     icon: RefreshCw,
@@ -629,7 +629,7 @@ export const updateTools: AiTool[] = [
   {
     spec: {
       name: "install_update",
-      description: "Download and install the available Sageport update.",
+      description: "Download and install the available Homeport update.",
       parameters: EMPTY_PARAMETERS,
     },
     icon: RefreshCw,

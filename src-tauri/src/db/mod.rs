@@ -67,8 +67,8 @@ mod tests {
 
     #[tokio::test]
     async fn init_opens_databases_in_paths_with_spaces_and_special_characters() {
-        let dir = std::env::temp_dir().join(format!("sageport db #%{}", uuid::Uuid::new_v4()));
-        let path = dir.join("sageport.db");
+        let dir = std::env::temp_dir().join(format!("homeport db #%{}", uuid::Uuid::new_v4()));
+        let path = dir.join("homeport.db");
 
         let pool = init(&path).await.unwrap();
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM hosts")
@@ -188,10 +188,10 @@ mod tests {
     fn database_and_parent_permissions_are_private() {
         use std::os::unix::fs::PermissionsExt;
 
-        let dir = std::env::temp_dir().join(format!("sageport-db-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("homeport-db-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir(&dir).unwrap();
         std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o755)).unwrap();
-        let path = dir.join("sageport.db");
+        let path = dir.join("homeport.db");
         std::fs::write(&path, b"").unwrap();
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
 

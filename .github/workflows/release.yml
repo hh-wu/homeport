@@ -74,7 +74,7 @@ jobs:
             FROM=$(git commit-tree "$EMPTY_TREE" -m "empty")
             FROM_ARGS=(--from "$FROM")
           fi
-          npx changelogithub@14 --draft --to "$TAG" --name "Sageport $TAG" "${FROM_ARGS[@]}"
+          npx changelogithub@14 --draft --to "$TAG" --name "Homeport $TAG" "${FROM_ARGS[@]}"
           release_id=$(gh release view "$TAG" --json databaseId -q .databaseId)
           printf 'release_id=%s\n' "$release_id" >> "$GITHUB_OUTPUT"
           echo "created=true" >> "$GITHUB_OUTPUT"
@@ -175,10 +175,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          SAGEPORT_GITHUB_CLIENT_ID: ${{ secrets.SAGEPORT_GITHUB_CLIENT_ID }}
-          SAGEPORT_GOOGLE_CLIENT_ID: ${{ secrets.SAGEPORT_GOOGLE_CLIENT_ID }}
-          SAGEPORT_GOOGLE_CLIENT_SECRET: ${{ secrets.SAGEPORT_GOOGLE_CLIENT_SECRET }}
-          SAGEPORT_MS_CLIENT_ID: ${{ secrets.SAGEPORT_MS_CLIENT_ID }}
+          HOMEPORT_GITHUB_CLIENT_ID: ${{ secrets.HOMEPORT_GITHUB_CLIENT_ID }}
+          HOMEPORT_GOOGLE_CLIENT_ID: ${{ secrets.HOMEPORT_GOOGLE_CLIENT_ID }}
+          HOMEPORT_GOOGLE_CLIENT_SECRET: ${{ secrets.HOMEPORT_GOOGLE_CLIENT_SECRET }}
+          HOMEPORT_MS_CLIENT_ID: ${{ secrets.HOMEPORT_MS_CLIENT_ID }}
         with:
           releaseId: ${{ needs.release.outputs.release_id }}
           args: ${{ matrix.args }}
@@ -193,21 +193,21 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $version = $env:TAG.TrimStart("v")
-          $name = "Sageport_${version}_x64-portable"
+          $name = "Homeport_${version}_x64-portable"
           $staging = Join-Path $env:RUNNER_TEMP $name
           New-Item -ItemType Directory -Path (Join-Path $staging "data") -Force | Out-Null
-          Copy-Item "src-tauri/target/release/Sageport.exe" -Destination $staging
+          Copy-Item "src-tauri/target/release/Homeport.exe" -Destination $staging
           $readme = @(
-            "Sageport portable build.",
+            "Homeport portable build.",
             "",
             "Every setting, host, key and session record lives in this folder.",
-            "Keep it next to Sageport.exe and move the whole folder together.",
+            "Keep it next to Homeport.exe and move the whole folder together.",
             "Credentials in this folder are not encrypted — keep the drive safe.",
             "",
-            "Sageport 便携版。",
+            "Homeport 便携版。",
             "",
             "所有设置、主机、密钥与会话记录都保存在此目录。",
-            "请让它与 Sageport.exe 保持在同一目录，迁移时整个目录一起移动。",
+            "请让它与 Homeport.exe 保持在同一目录，迁移时整个目录一起移动。",
             "该目录中的凭据未经加密，请自行保管好磁盘。"
           )
           Set-Content -Path (Join-Path $staging "data/README.txt") -Encoding utf8 -Value $readme

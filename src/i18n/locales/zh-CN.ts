@@ -156,7 +156,7 @@ export const zhCN: Dictionary = {
   },
 
   tray: {
-    open: "打开 Sageport",
+    open: "打开 Homeport",
     quit: "退出",
     section: "定时任务",
     forwards: "端口转发",
@@ -349,7 +349,7 @@ export const zhCN: Dictionary = {
     unsavedIndicator: "有未保存的更改",
     unsavedDescription: "如果不保存就关闭，更改“{name}”将会丢失。",
     unsavedWindowDescription:
-      "如果不保存就关闭 Sageport，{count} 个文件的更改将会丢失。",
+      "如果不保存就关闭 Homeport，{count} 个文件的更改将会丢失。",
     discard: "不保存",
     discardAll: "不保存",
     saveAll: "全部保存",
@@ -1273,9 +1273,9 @@ export const zhCN: Dictionary = {
     general: {
       startup: "启动",
       autostart: {
-        label: "登录时启动 Sageport",
+        label: "登录时启动 Homeport",
         description:
-          "登录设备后自动启动 Sageport。已启用“启动时自动开启”的端口转发也会随之启动。",
+          "登录设备后自动启动 Homeport。已启用“启动时自动开启”的端口转发也会随之启动。",
         loading: "正在检查启动设置",
         loadError: "检查启动设置失败",
         saveError: "更新启动设置失败",
@@ -1380,7 +1380,7 @@ export const zhCN: Dictionary = {
       description:
         "将主机、分组、身份、密钥、命令片段、任务、端口转发、SFTP 书签和设置备份到你选择的存储。所有数据在离开本设备前都会先用口令进行端到端加密。切换存储需先断开连接。",
       providerLabel: "存储服务",
-      corruptRemoteBackup: "备份可能已损坏，或来自不兼容的 Sageport 版本。",
+      corruptRemoteBackup: "备份可能已损坏，或来自不兼容的 Homeport 版本。",
       provider: {
         gistTagline: "你 GitHub 账户下的私密 Gist",
         gdriveTagline: "Google Drive 中的隐藏应用文件夹",
@@ -1392,7 +1392,7 @@ export const zhCN: Dictionary = {
         oauthSignIn: "使用 {name} 登录",
         oauthUnavailable: "此版本未配置 {name} 的 OAuth 客户端 ID，无法登录。",
         oauthError: "授权失败",
-        deviceCodeHint: "在 GitHub 中输入此代码以授权 Sageport。",
+        deviceCodeHint: "在 GitHub 中输入此代码以授权 Homeport。",
         openPageButton: "打开 GitHub",
         browserWaiting: "等待你在浏览器中完成授权…",
         authorizedAs: "已登录：{account}",
@@ -1468,7 +1468,7 @@ export const zhCN: Dictionary = {
         importButton: "从文件恢复",
         exportDialogTitle: "导出加密备份",
         importDialogTitle: "恢复加密备份",
-        vaultFilterName: "Sageport 备份",
+        vaultFilterName: "Homeport 备份",
         exportedTitle: "备份已导出",
         exportFailed: "导出失败",
         importedTitle: "备份已恢复",
@@ -1476,7 +1476,7 @@ export const zhCN: Dictionary = {
         importWrongPassphrase:
           "口令与加密此文件时使用的口令不一致，请检查后重试。",
         importInvalidFile:
-          "所选文件不是有效的 Sageport 备份文件，请确认选择了正确的文件。",
+          "所选文件不是有效的 Homeport 备份文件，请确认选择了正确的文件。",
         passphraseDialogTitle: "输入备份口令",
         exportPassphraseConfirm: "选择导出位置",
         importPassphraseConfirm: "选择备份文件",
@@ -1486,13 +1486,14 @@ export const zhCN: Dictionary = {
       version: "版本",
       author: "作者",
       license: "许可证",
+      forkNote: "Homeport 是 Sageport 的分支，仅供本地个人使用。",
       openLinkError: "打开链接失败",
       update: {
         title: "版本更新",
-        idle: "检查 Sageport 是否有可用的新版本。",
+        idle: "检查 Homeport 是否有可用的新版本。",
         check: "检查更新",
         checking: "正在检查更新…",
-        upToDate: "Sageport 已是最新版本",
+        upToDate: "Homeport 已是最新版本",
         available: "发现新版本 {version}",
         install: "下载并安装",
         viewRelease: "查看发布页",
@@ -1501,11 +1502,11 @@ export const zhCN: Dictionary = {
         downloadingVersion: "正在下载版本 {version}",
         downloadingProgress: "正在下载 {percent}%",
         ready: "新版本 {version} 已就绪",
-        restartHint: "重启 Sageport 即可完成更新。",
+        restartHint: "重启 Homeport 即可完成更新。",
         restart: "重启以更新",
         checkError: "检查更新失败",
         installError: "安装更新失败",
-        restartError: "重启 Sageport 失败",
+        restartError: "重启 Homeport 失败",
       },
     },
   },

@@ -249,7 +249,7 @@ mod tests {
     fn known_hosts_replacement_is_private_and_rejects_symlinks() {
         use std::os::unix::fs::{symlink, PermissionsExt};
 
-        let dir = std::env::temp_dir().join(format!("sageport-known-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("homeport-known-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&dir).unwrap();
         let path = dir.join("known_hosts");
         write_atomic_private(&path, b"first\n").unwrap();

@@ -20,7 +20,7 @@ pub(crate) const MAX_API_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
 
-const FILE_PREFIX: &str = "sageport-vault-";
+const FILE_PREFIX: &str = "homeport-vault-";
 const FILE_SUFFIX: &str = ".json";
 const NAME_TIME_FORMAT: &str = "%Y%m%dT%H%M%S%3fZ";
 
@@ -361,14 +361,14 @@ mod tests {
         let rfc3339 = version_time_from_name(&name).expect("name embeds a parseable timestamp");
         assert!(rfc3339.ends_with('Z'));
 
-        let earlier = "sageport-vault-20200101T000000000Z.json";
+        let earlier = "homeport-vault-20200101T000000000Z.json";
         assert!(earlier < name.as_str());
         assert!(version_time_from_name(earlier).unwrap() < rfc3339);
     }
 
     #[test]
     fn foreign_names_are_ignored() {
-        assert!(version_time_from_name("sageport-vault-garbage.json").is_none());
+        assert!(version_time_from_name("homeport-vault-garbage.json").is_none());
         assert!(!is_vault_filename("notes.txt"));
     }
 
@@ -376,8 +376,8 @@ mod tests {
     async fn malformed_vault_names_cannot_shadow_the_latest_backup() {
         let envelope = crate::crypto::encrypt(b"snapshot", "passphrase").unwrap();
         let body = serde_json::to_vec(&envelope).unwrap();
-        let valid_name = "sageport-vault-20260101T000000000Z.json";
-        let invalid_name = "sageport-vault-zzzz.json";
+        let valid_name = "homeport-vault-20260101T000000000Z.json";
+        let invalid_name = "homeport-vault-zzzz.json";
         let mut provider = Versioned(MemoryStore {
             objects: vec![
                 RemoteObject {

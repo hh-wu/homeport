@@ -9,7 +9,7 @@ import {
 
 describe("command palette navigation", () => {
   it("fuzzy-matches Unicode code points and subsequences", () => {
-    expect(fuzzyPaletteMatch("sp", "Sageport")).toBe(true);
+    expect(fuzzyPaletteMatch("hp", "Homeport")).toBe(true);
     expect(fuzzyPaletteMatch("🛰️服", "🛰️服务器")).toBe(true);
     expect(fuzzyPaletteMatch("🛰️x", "🛰️服务器")).toBe(false);
   });

@@ -1,10 +1,13 @@
 <div align="center">
 
-<img src="public/app-icon.png" alt="Sageport" width="96" height="96" />
+<img src="public/app-icon.png" alt="Homeport" width="96" height="96" />
 
-# Sageport
+# Homeport
 
 **One workspace for every server you run.**
+
+> A personal fork of [Sageport](https://github.com/joygqz/sageport) by Quincy Zhang,
+> with a remote access console layered on top. See [HOMEPORT.md](HOMEPORT.md) for what changed.
 
 Terminal, file transfer, monitoring, port forwarding, and scheduled automation — in a single free, open-source desktop app that talks plain SSH.
 

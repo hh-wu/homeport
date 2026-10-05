@@ -1,6 +1,6 @@
 import sqlite3
 
-DB = r"D:\Programs\SageportRC\data\sageport.db"
+DB = r"D:\Programs\Homeport\data\homeport.db"
 con = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
 rows = con.execute(
     "SELECT key, value FROM settings WHERE key LIKE 'remote.%' ORDER BY key"

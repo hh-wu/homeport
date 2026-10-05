@@ -8,8 +8,8 @@ import { applyEditorTheme, monaco } from "@/features/sftp/monaco";
 import { jsonSettingsSchema } from "./jsonSettings";
 
 const FONT_BASE = 13;
-const SETTINGS_MODEL_URI = "inmemory://settings/sageport.settings.json";
-const SETTINGS_SCHEMA_URI = "sageport://schemas/settings.json";
+const SETTINGS_MODEL_URI = "inmemory://settings/Homeport.settings.json";
+const SETTINGS_SCHEMA_URI = "Homeport://schemas/settings.json";
 
 monaco.json.jsonDefaults.setDiagnosticsOptions({
   validate: true,
@@ -21,7 +21,7 @@ monaco.json.jsonDefaults.setDiagnosticsOptions({
   schemas: [
     {
       uri: SETTINGS_SCHEMA_URI,
-      fileMatch: ["*sageport.settings.json"],
+      fileMatch: ["*Homeport.settings.json"],
       schema: jsonSettingsSchema(),
     },
   ],

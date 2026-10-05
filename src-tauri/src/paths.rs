@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 use crate::error::{AppError, AppResult};
 
 const PORTABLE_DIR: &str = "data";
-const DATA_DIR_ENV: &str = "SAGEPORT_DATA_DIR";
+const DATA_DIR_ENV: &str = "HOMEPORT_DATA_DIR";
 
 static DATA_DIR: OnceLock<PathBuf> = OnceLock::new();
 
@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn an_explicit_data_directory_overrides_every_other_location() {
-        let dir = std::env::temp_dir().join(format!("sageport-data-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("homeport-data-{}", uuid::Uuid::new_v4()));
         std::env::set_var(DATA_DIR_ENV, &dir);
         assert_eq!(resolve_override(), Some(dir));
 

@@ -24,7 +24,7 @@ export const useHighlightStore = create<HighlightState>()(
       },
     }),
     {
-      name: "sageport.highlightRules",
+      name: "Homeport.highlightRules",
       version: 3,
       migrate: (persisted, version) => {
         const state = persisted as Partial<HighlightState> | undefined;

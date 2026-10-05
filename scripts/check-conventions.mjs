@@ -26,7 +26,7 @@ for (const [file, version] of versions) {
   }
 }
 
-const releaseTag = process.env.SAGEPORT_RELEASE_TAG;
+const releaseTag = process.env.HOMEPORT_RELEASE_TAG;
 if (releaseTag && releaseTag !== `v${packageJson.version}`) {
   problems.push(
     `release tag ${releaseTag} does not match application version v${packageJson.version}`,

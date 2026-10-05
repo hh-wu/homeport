@@ -1,4 +1,4 @@
-# Sageport RC —— 远程访问控制台
+# Homeport —— 远程访问控制台
 
 本目录是 [Sageport](https://github.com/joygqz/sageport) 的 fork，在原有 SSH 工作台之上加入了一个
 「远程访问」面板：控制本机 frpc 的启停、查看中转服务器上的代理状态、查询阿里云 ECS 资源与流量。
@@ -14,8 +14,8 @@
 | `src-tauri/src/commands/mod.rs`                    | 注册新模块                                                                                    |
 | `src-tauri/src/lib.rs`                             | 注册 10 个 IPC 命令，启动看门狗任务                                                           |
 | `src-tauri/src/tray.rs`                            | 托盘菜单加入「启动 frpc / 停止 frpc」，并广播 `rc://status`                                   |
-| `src-tauri/Cargo.toml`                             | 新增依赖 `hmac`、`hex`、`windows-sys`（进程枚举）；bin 名改为 `SageportRC`                    |
-| `src-tauri/tauri.conf.json`                        | 产品名 `Sageport RC`，标识符 `com.nick0x01.sageportrc`                                        |
+| `src-tauri/Cargo.toml`                             | 新增依赖 `hmac`、`hex`、`windows-sys`（进程枚举）；bin 名改为 `Homeport`                      |
+| `src-tauri/tauri.conf.json`                        | 产品名 `Homeport`，标识符 `com.nick0x01.homeport`                                             |
 | `src/features/remote-console/`                     | 新增视图与数据层（`RemoteConsoleView.tsx`、`api.ts`）                                         |
 | `src/lib/ipc.ts`                                   | 新增 `ipc.remoteConsole` 命名空间                                                             |
 | `src/types/models.ts`                              | 新增 `RcStatus`、`RcCloud`、`RcRustDesk`                                                      |
@@ -90,7 +90,7 @@ cd src-tauri
 cargo build --release --features custom-protocol
 ```
 
-产物：`src-tauri\target\release\SageportRC.exe`
+产物：`src-tauri\target\release\Homeport.exe`
 
 若要复用其他 Sageport 检出的依赖缓存，可设置：
 
@@ -102,9 +102,9 @@ $env:CARGO_TARGET_DIR = "<其他检出>\src-tauri\target"
 
 直接运行 exe 即可。数据目录按以下优先级解析（见 `src-tauri/src/paths.rs`）：
 
-1. 环境变量 `SAGEPORT_DATA_DIR`
+1. 环境变量 `HOMEPORT_DATA_DIR`
 2. exe 同级的 `data` 目录（存在即为**便携模式**）
-3. 系统应用数据目录（由标识符 `com.nick0x01.sageportrc` 决定）
+3. 系统应用数据目录（由标识符 `com.nick0x01.homeport` 决定）
 
 因此本 fork 与原版 Sageport 的数据互不干扰。
 

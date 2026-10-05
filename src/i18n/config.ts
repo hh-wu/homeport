@@ -9,8 +9,8 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   "zh-CN": "简体中文",
 };
 
-export const LOCALE_STORAGE_KEY = "sageport.locale";
-export const LOCALE_CHANGE_EVENT = "sageport:locale-change";
+export const LOCALE_STORAGE_KEY = "Homeport.locale";
+export const LOCALE_CHANGE_EVENT = "Homeport:locale-change";
 
 export function isLocale(value: unknown): value is Locale {
   return (

@@ -36,7 +36,7 @@ import { expandReplacement } from "./file-search";
 import { monaco } from "./monaco";
 
 const MATCH_LIMIT = 20_000;
-const EDIT_SOURCE = "sageport.fileFind";
+const EDIT_SOURCE = "Homeport.fileFind";
 
 type CodeEditor = ReturnType<typeof monaco.editor.create>;
 type FindMatch = monaco.editor.FindMatch;
@@ -298,8 +298,8 @@ export const FileFindBar = forwardRef<FileFindBarHandle, FileFindBarProps>(
           options: {
             className:
               index === state.activeIndex
-                ? "sageport-find-match-current"
-                : "sageport-find-match",
+                ? "homeport-find-match-current"
+                : "homeport-find-match",
             showIfCollapsed: true,
             stickiness:
               monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,

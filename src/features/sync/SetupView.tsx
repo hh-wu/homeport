@@ -384,7 +384,7 @@ function ConnectForm({
             <Input
               value={webdav.url}
               onChange={(e) => setWebdav({ ...webdav, url: e.target.value })}
-              placeholder="https://dav.example.com/sageport"
+              placeholder="https://dav.example.com/Homeport"
               autoComplete="off"
               spellCheck={false}
               maxLength={8192}
@@ -480,7 +480,7 @@ function ConnectForm({
             <Input
               value={s3.prefix}
               onChange={(e) => setS3({ ...s3, prefix: e.target.value })}
-              placeholder="sageport/"
+              placeholder="Homeport/"
               autoComplete="off"
               spellCheck={false}
               maxLength={4096}

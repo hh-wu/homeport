@@ -151,7 +151,7 @@ mod tests {
     fn clipboard_cache_and_images_use_private_permissions() {
         use std::os::unix::fs::PermissionsExt;
 
-        let root = std::env::temp_dir().join(format!("sageport-clipboard-{}", Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("homeport-clipboard-{}", Uuid::new_v4()));
         fs::create_dir(&root).unwrap();
         fs::set_permissions(&root, fs::Permissions::from_mode(0o755)).unwrap();
         prepare_private_dir(&root).unwrap();

@@ -21,7 +21,7 @@ self.MonacoEnvironment = {
   },
 };
 
-const EDITOR_THEME = "sageport";
+const EDITOR_THEME = "Homeport";
 
 let appliedThemeId: string | null = null;
 

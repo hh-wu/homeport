@@ -305,10 +305,10 @@ mod tests {
 
     #[test]
     fn decodes_webdav_hrefs_without_treating_collections_as_vaults() {
-        let xml = r#"<d:multistatus xmlns:d="DAV:"><d:response><d:href>/vault/</d:href></d:response><d:response><d:href>/vault/sageport-vault-20260101T000000000Z.json</d:href></d:response></d:multistatus>"#;
+        let xml = r#"<d:multistatus xmlns:d="DAV:"><d:response><d:href>/vault/</d:href></d:response><d:response><d:href>/vault/homeport-vault-20260101T000000000Z.json</d:href></d:response></d:multistatus>"#;
         let names = parse_hrefs(xml).unwrap();
         assert!(names.contains(&"vault".to_string()));
-        assert!(names.contains(&"sageport-vault-20260101T000000000Z.json".to_string()));
+        assert!(names.contains(&"homeport-vault-20260101T000000000Z.json".to_string()));
     }
 
     #[test]

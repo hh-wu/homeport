@@ -35,7 +35,7 @@ describe("release version synchronization", () => {
 
   it("updates only the Cargo package version", () => {
     const input = `[package]
-name = "sageport"
+name = "homeport"
 version = "2.3.0"
 
 [dependencies]
@@ -43,7 +43,7 @@ russh-sftp = "2.3.0"
 `;
 
     expect(updateCargoPackageVersion(input, "2.3.0", "2.4.0")).toBe(`[package]
-name = "sageport"
+name = "homeport"
 version = "2.4.0"
 
 [dependencies]
@@ -61,13 +61,13 @@ russh-sftp = "2.3.0"
     ).toThrow("expected version 2.3.0, found 2.2.0");
   });
 
-  it("updates only the Sageport package in Cargo.lock", () => {
+  it("updates only the Homeport package in Cargo.lock", () => {
     const input = `[[package]]
 name = "russh-sftp"
 version = "2.3.0"
 
 [[package]]
-name = "sageport"
+name = "homeport"
 version = "2.3.0"
 dependencies = []
 `;
@@ -77,7 +77,7 @@ name = "russh-sftp"
 version = "2.3.0"
 
 [[package]]
-name = "sageport"
+name = "homeport"
 version = "2.4.0"
 dependencies = []
 `);

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Sageport RC",
+  "productName": "Homeport",
   "version": "2.8.1",
-  "identifier": "com.nick0x01.sageportrc",
+  "identifier": "com.nick0x01.homeport",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Sageport",
+        "title": "Homeport",
         "width": 1280,
         "height": 800,
         "minWidth": 960,
@@ -28,9 +28,9 @@
   "bundle": {
     "active": true,
     "targets": ["app", "dmg", "nsis", "appimage", "deb"],
-    "createUpdaterArtifacts": true,
-    "publisher": "Quincy Zhang",
-    "copyright": "Copyright © 2026 Quincy Zhang",
+    "createUpdaterArtifacts": false,
+    "publisher": "Quincy Zhang (fork maintained by hh-wu)",
+    "copyright": "Copyright © 2026 Quincy Zhang · fork modifications © 2026 hh-wu",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -52,7 +52,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVGQjU3OUU2NzUxOTlGREIKUldUYm54bDE1bm0xNzg1T1REcFZwRFl4a1l2OXNCSnRWazVRLzRMazVoMG9MbW1ydkRoSXp4dE8K",
       "endpoints": [
-        "https://github.com/joygqz/sageport/releases/latest/download/latest.json"
+        "https://github.com/hh-wu/homeport/releases/latest/download/latest.json"
       ]
     }
   }

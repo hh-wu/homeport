@@ -1,7 +1,7 @@
 import { layoutPaneIds, type PaneLayout } from "./pane-layout";
 import type { TerminalTab, TerminalTarget } from "./tabs";
 
-export const WORKSPACE_STORAGE_KEY = "sageport.workspace.v1";
+export const WORKSPACE_STORAGE_KEY = "Homeport.workspace.v1";
 const MAX_WORKSPACE_BYTES = 256 * 1024;
 const MAX_LAYOUT_DEPTH = 20;
 
