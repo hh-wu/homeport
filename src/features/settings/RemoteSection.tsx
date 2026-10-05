@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Button, Field, Input, Spinner } from "@/components/ui";
+import { Button, Field, Input, Spinner, Textarea } from "@/components/ui";
 import { useI18n, type TKey } from "@/i18n";
 import { useRcConfig, useRcSaveConfig } from "@/features/remote-console/api";
 import { errorMessage, toast } from "@/lib/toast";
@@ -12,6 +12,7 @@ type Draft = Record<keyof RcConfig, string>;
 const GROUPS: {
   titleKey: TKey;
   fields: { key: keyof RcConfig; labelKey: TKey; numeric?: boolean }[];
+  longFields?: { key: keyof RcConfig; labelKey: TKey; hintKey: TKey }[];
 }[] = [
   {
     titleKey: "settings.remote.frpc",
@@ -34,6 +35,13 @@ const GROUPS: {
     fields: [
       { key: "dashboardUrl", labelKey: "remote.cfgDashboardUrl" },
       { key: "dashboardAuth", labelKey: "remote.cfgDashboardAuth" },
+    ],
+    longFields: [
+      {
+        key: "portMap",
+        labelKey: "remote.cfgPortMap",
+        hintKey: "remote.cfgPortMapHint",
+      },
     ],
   },
   {
@@ -120,6 +128,34 @@ function RemoteForm({ config }: { config: RcConfig }) {
                 inputMode={field.numeric ? "decimal" : undefined}
                 spellCheck={false}
                 autoComplete="off"
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    [field.key]: event.target.value,
+                  }))
+                }
+                onBlur={() => {
+                  if (
+                    JSON.stringify(draft) !== JSON.stringify(toDraft(config))
+                  ) {
+                    commit(draft);
+                  }
+                }}
+              />
+            </Field>
+          ))}
+          {group.longFields?.map((field) => (
+            <Field
+              key={field.key}
+              label={t(field.labelKey)}
+              hint={t(field.hintKey)}
+            >
+              <Textarea
+                value={draft[field.key]}
+                rows={4}
+                spellCheck={false}
+                autoComplete="off"
+                className="font-mono text-xs"
                 onChange={(event) =>
                   setDraft((current) => ({
                     ...current,

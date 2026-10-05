@@ -8,27 +8,28 @@
 
 ## 与原版的差异
 
-| 位置                                               | 改动                                                                                          |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `src-tauri/src/commands/remote_console.rs`         | 新增：frpc 启停/状态/看门狗、frps 服务器状态查询（结构化）、阿里云 ECS 与计费查询、配置持久化 |
-| `src-tauri/src/commands/mod.rs`                    | 注册新模块                                                                                    |
-| `src-tauri/src/lib.rs`                             | 注册 10 个 IPC 命令，启动看门狗任务                                                           |
-| `src-tauri/src/tray.rs`                            | 托盘菜单加入「启动 frpc / 停止 frpc」，并广播 `rc://status`                                   |
-| `src-tauri/Cargo.toml`                             | 新增依赖 `hmac`、`hex`、`windows-sys`（进程枚举）；bin 名改为 `Homeport`                      |
-| `src-tauri/tauri.conf.json`                        | 产品名 `Homeport`，标识符 `com.nick0x01.homeport`                                             |
-| `src/features/remote-console/`                     | 新增视图与数据层（`RemoteConsoleView.tsx`、`api.ts`）                                         |
-| `src/lib/ipc.ts`                                   | 新增 `ipc.remoteConsole` 命名空间                                                             |
-| `src/types/models.ts`                              | 新增 `RcStatus`、`RcCloud`、`RcRustDesk`                                                      |
-| `src/workbench/{ActivityBar,SideBar,layout-state}` | 新增 `remote` 活动视图入口                                                                    |
-| `src/i18n/locales/{en,zh-CN}.ts`                   | 新增 `remote.*` 与 `activityBar.remote` 文案（双语同步）                                      |
-| `scripts/check-conventions.mjs`                    | 顺带修复 Windows 路径 bug（`URL.pathname` → `fileURLToPath`），原版在 Windows 上必失败        |
-| `src/i18n/locales/parity.test.ts`                  | 允许清单补入 `IP`、`RustDesk`                                                                 |
+| 位置                                               | 改动                                                                                                    |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `src-tauri/src/commands/remote_console.rs`         | 新增：frpc 启停/状态/看门狗、frps 服务器状态与端口映射查询（结构化）、阿里云 ECS 与计费查询、配置持久化 |
+| `src-tauri/src/commands/mod.rs`                    | 注册新模块                                                                                              |
+| `src-tauri/src/lib.rs`                             | 注册 10 个 IPC 命令，启动看门狗任务                                                                     |
+| `src-tauri/src/tray.rs`                            | 托盘菜单加入「启动 frpc / 停止 frpc」，并广播 `rc://status`                                             |
+| `src-tauri/Cargo.toml`                             | 新增依赖 `hmac`、`hex`、`windows-sys`（进程枚举）；bin 名改为 `Homeport`                                |
+| `src-tauri/tauri.conf.json`                        | 产品名 `Homeport`，标识符 `com.nick0x01.homeport`                                                       |
+| `src/features/remote-console/`                     | 新增视图与数据层（`RemoteConsoleView.tsx`、`api.ts`）                                                   |
+| `src/lib/ipc.ts`                                   | 新增 `ipc.remoteConsole` 命名空间                                                                       |
+| `src/types/models.ts`                              | 新增 `RcStatus`、`RcCloud`、`RcRustDesk`                                                                |
+| `src/workbench/{ActivityBar,SideBar,layout-state}` | 新增 `remote` 活动视图入口                                                                              |
+| `src/i18n/locales/{en,zh-CN}.ts`                   | 新增 `remote.*` 与 `activityBar.remote` 文案（双语同步）                                                |
+| `scripts/check-conventions.mjs`                    | 顺带修复 Windows 路径 bug（`URL.pathname` → `fileURLToPath`），原版在 Windows 上必失败                  |
+| `src/i18n/locales/parity.test.ts`                  | 允许清单补入 `IP`、`RustDesk`                                                                           |
 
 ## 面板内容
 
 - **运行状态**：frpc 进程、PID、运行时长（从日志推算）、启动/停止按钮、掉线自动重启（看门狗）
 - **服务器侧**（标签页卡片，两个页签）：
-  - **现有配置**：frps 版本、在线客户端数、累计流量，以及结构化代理列表（名称 / 类型 / 在线状态 / 连接数 / 当日流量），每 60 秒自动刷新，也可手动刷新
+  - **现有配置**：frps 版本、在线客户端数、中转地址与端口、累计流量，以及结构化代理列表（名称 / 类型 / 在线状态），
+    每个代理显示**端口映射**；每 60 秒自动刷新，也可手动刷新
   - **日志**：frpc 日志尾部，可用编辑器打开
 - **云资源**：ECS 实例状态/规格/可用区/公网 IP、实时出/入带宽、本月出/入流量、估算流量费、账户余额、本月账单
 - **RustDesk**：自建服务器地址与 Key，一键复制
@@ -47,26 +48,37 @@
 
 ## 配置
 
-**源码中不保留任何配置值**（除首次运行的默认值外）。全部 13 项设置存放在本地数据库的 `settings` 表，
+**源码中不保留任何配置值**（除首次运行的默认值外）。全部 14 项设置存放在本地数据库的 `settings` 表，
 键前缀 `remote.`：
 
-| 键                                                          | 含义                                    |
-| ----------------------------------------------------------- | --------------------------------------- |
-| `remote.frpcPath` / `remote.frpcConfigPath`                 | frpc 可执行文件与配置文件               |
-| `remote.logPath`                                            | frpc 日志路径（用于运行时长与日志面板） |
-| `remote.relayHost` / `remote.sshUser` / `remote.sshKeyPath` | 中转服务器的 SSH 连接参数               |
-| `remote.dashboardUrl` / `remote.dashboardAuth`              | frps 面板地址与认证（`user:password`）  |
-| `remote.rustdeskDomain` / `remote.rustdeskKey`              | RustDesk 自建服务器参数                 |
-| `remote.instanceId` / `remote.region` / `remote.pricePerGb` | 阿里云实例、地域与流量单价              |
+| 键                                                          | 含义                                         |
+| ----------------------------------------------------------- | -------------------------------------------- |
+| `remote.frpcPath` / `remote.frpcConfigPath`                 | frpc 可执行文件与配置文件                    |
+| `remote.logPath`                                            | frpc 日志路径（用于运行时长与日志面板）      |
+| `remote.relayHost` / `remote.sshUser` / `remote.sshKeyPath` | 中转服务器的 SSH 连接参数                    |
+| `remote.dashboardUrl` / `remote.dashboardAuth`              | frps 面板地址与认证（`user:password`）       |
+| `remote.portMap`                                            | 代理名到访问端口的映射（每行 `名称 = 端口`） |
+| `remote.rustdeskDomain` / `remote.rustdeskKey`              | RustDesk 自建服务器参数                      |
+| `remote.instanceId` / `remote.region` / `remote.pricePerGb` | 阿里云实例、地域与流量单价                   |
 
 行为：
 
-- 首次启动自动把默认值写入数据库（`remote_console::ensure_config`），之后一律以数据库为准
+- 首次启动自动补齐**缺失的**键（`remote_console::ensure_config`），已有值一律不覆盖，因此版本升级新增设置项时无需手动配置
 - **配置界面在「设置 → 远程访问」**（`features/settings/RemoteSection.tsx`），按 frpc / 中转服务器 / frps 面板 / RustDesk / 阿里云分成 5 组；
-  字段**失焦即保存**（与设置页其它分区一致），保存时校验（必填项、frpc 路径须为 `.exe`、面板认证须含 `:`、单价范围）
+  字段**失焦即保存**（与设置页其它分区一致），保存时校验（必填项、frpc 路径须为 `.exe`、面板认证须含 `:`、单价范围、端口映射格式）
 - 远程访问面板底部保留一个卡片，点「打开设置」可直接跳到该分区（`openSettings("remote")`）
 - 面板认证密码、RustDesk Key 等敏感值同样存放于该数据库——与 Sageport 自身对主机凭据的处理方式一致
 - 阿里云 AccessKey **不在**这些设置里，仍从环境变量或 `~\.aliyun\credentials.json` 读取
+
+端口映射的取值来源（frps 面板只提供一半信息，另一半需本地补齐）：
+
+| 显示项   | 来源                                      | 说明                                                                                 |
+| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------ |
+| 本机端口 | 本机 `frpcConfigPath` 的 `[[proxies]]` 段 | frps 面板对 `stcp` 不返回 `localPort`，只能读本机配置                                |
+| 中转端口 | frps `serverinfo` 的 `bindPort`           | 所有代理共用，显示在卡片上部                                                         |
+| 访问端口 | `remote.portMap` 配置                     | `stcp` 的访问端口属于访问方机器的 visitor，frps 完全不记录（0.69.1 无 visitor 端点） |
+
+因此由其它机器提供的代理（如 `server-4090-*`）只显示访问端口——本机配置里没有它的服务端口，不臆测。
 
 辅助脚本：
 
@@ -141,7 +153,7 @@ cd src-tauri; cargo test --lib
 | `pnpm lint`                                    | 通过                             |
 | `pnpm test`                                    | 74 文件 / 514 用例全通过         |
 | `cargo test --lib`                             | 185 通过 / **13 失败**           |
-| `cargo test --lib remote_console`              | 6 个单元测试通过                 |
+| `cargo test --lib remote_console`              | 9 个单元测试通过                 |
 | `cargo test --lib remote_console -- --ignored` | 真实调用阿里云接口验证签名，通过 |
 
 那 13 个失败是**上游在 Windows 上的既有问题**，与本 fork 无关：原始检出跑同一套用例，失败数量与名单完全一致。

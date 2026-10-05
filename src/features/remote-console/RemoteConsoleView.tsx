@@ -33,10 +33,11 @@ import {
   SwitchField,
   type ConfirmState,
 } from "@/components/ui";
-import { useI18n } from "@/i18n";
+import { useI18n, type TFunction } from "@/i18n";
 import { ipc } from "@/lib/ipc";
 import { errorMessage, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import type { RcProxy } from "@/types/models";
 import { SideBarView } from "@/workbench/SideBarView";
 import {
   remoteConsoleKeys,
@@ -172,6 +173,24 @@ function formatBytesValue(bytes: number) {
     unit += 1;
   }
   return `${unit === 0 ? value : value.toFixed(1)} ${units[unit]}`;
+}
+
+const LOOPBACK = ["", "127.0.0.1", "localhost", "::1"];
+
+function portMapping(proxy: RcProxy, t: TFunction): string | null {
+  const local = proxy.localPort
+    ? `${LOOPBACK.includes(proxy.localIp) ? "" : `${proxy.localIp}:`}${proxy.localPort}`
+    : null;
+  const target = proxy.remotePort
+    ? `${t("remote.mapRelay")} ${proxy.remotePort}`
+    : proxy.accessPort
+      ? `${t("remote.mapAccess")} ${proxy.accessPort}`
+      : null;
+
+  if (local && target) return `${t("remote.mapLocal")} ${local} → ${target}`;
+  if (target) return target;
+  if (local) return `${t("remote.mapLocal")} ${local}`;
+  return null;
 }
 
 export function RemoteConsoleView() {
@@ -372,6 +391,14 @@ export function RemoteConsoleView() {
                 </div>
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-surface px-2.5 py-2">
                   <span className="text-[0.6875rem] text-muted-foreground">
+                    {t("remote.mapRelay")}
+                  </span>
+                  <span className="truncate font-mono text-[0.6875rem] text-foreground">
+                    {server.relayHost}:{server.bindPort}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-surface px-2.5 py-2">
+                  <span className="text-[0.6875rem] text-muted-foreground">
                     {t("remote.serverTraffic")}
                   </span>
                   <span className="font-mono text-[0.6875rem] text-foreground">
@@ -385,31 +412,43 @@ export function RemoteConsoleView() {
                       {t("remote.proxyNone")}
                     </p>
                   ) : (
-                    server.proxies.map((proxy) => (
-                      <div
-                        key={`${proxy.kind}-${proxy.name}`}
-                        className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 hover:bg-list-hover"
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <StatusDot ok={proxy.online} />
-                          <span className="truncate text-xs font-medium text-foreground">
-                            {proxy.name}
-                          </span>
-                        </span>
-                        <span className="flex shrink-0 items-center gap-1.5">
-                          <span className="text-[0.625rem] text-muted-foreground">
-                            {proxy.kind}
-                          </span>
-                          <Badge
-                            variant={proxy.online ? "success" : "destructive"}
-                          >
-                            {proxy.online
-                              ? t("remote.online")
-                              : t("remote.offline")}
-                          </Badge>
-                        </span>
-                      </div>
-                    ))
+                    server.proxies.map((proxy) => {
+                      const mapping = portMapping(proxy, t);
+                      return (
+                        <div
+                          key={`${proxy.kind}-${proxy.name}`}
+                          className="flex flex-col gap-0.5 rounded-md px-1.5 py-1 hover:bg-list-hover"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="flex min-w-0 items-center gap-2">
+                              <StatusDot ok={proxy.online} />
+                              <span className="truncate text-xs font-medium text-foreground">
+                                {proxy.name}
+                              </span>
+                            </span>
+                            <span className="flex shrink-0 items-center gap-1.5">
+                              <span className="text-[0.625rem] text-muted-foreground">
+                                {proxy.kind}
+                              </span>
+                              <Badge
+                                variant={
+                                  proxy.online ? "success" : "destructive"
+                                }
+                              >
+                                {proxy.online
+                                  ? t("remote.online")
+                                  : t("remote.offline")}
+                              </Badge>
+                            </span>
+                          </div>
+                          {mapping && (
+                            <span className="pl-3.5 font-mono text-[0.625rem] text-muted-foreground">
+                              {mapping}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
                   )}
                 </div>
                 {server.errors.length > 0 && (

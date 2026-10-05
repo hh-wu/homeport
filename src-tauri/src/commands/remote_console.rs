@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -36,9 +37,10 @@ const KEY_RUSTDESK_KEY: &str = "remote.rustdeskKey";
 const KEY_INSTANCE_ID: &str = "remote.instanceId";
 const KEY_REGION: &str = "remote.region";
 const KEY_PRICE: &str = "remote.pricePerGb";
+const KEY_PORT_MAP: &str = "remote.portMap";
 
 #[cfg(test)]
-const KEYS: [&str; 13] = [
+const KEYS: [&str; 14] = [
     KEY_FRPC_PATH,
     KEY_FRPC_CONFIG,
     KEY_LOG_PATH,
@@ -52,9 +54,15 @@ const KEYS: [&str; 13] = [
     KEY_INSTANCE_ID,
     KEY_REGION,
     KEY_PRICE,
+    KEY_PORT_MAP,
 ];
 
 const BSS_HOST: &str = "business.aliyuncs.com";
+
+const DEFAULT_PORT_MAP: &str = "home-rdp = 13389
+home-ssh = 10022
+server-4090-rdp = 23389
+server-4090-ssh = 20022";
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -72,6 +80,7 @@ pub struct RcConfig {
     instance_id: String,
     region: String,
     price_per_gb: f64,
+    port_map: String,
 }
 
 impl Default for RcConfig {
@@ -90,6 +99,7 @@ impl Default for RcConfig {
             instance_id: String::new(),
             region: "cn-shanghai".into(),
             price_per_gb: 0.8,
+            port_map: DEFAULT_PORT_MAP.into(),
         }
     }
 }
@@ -110,6 +120,7 @@ impl RcConfig {
             (KEY_INSTANCE_ID.into(), self.instance_id.clone()),
             (KEY_REGION.into(), self.region.clone()),
             (KEY_PRICE.into(), format!("{}", self.price_per_gb)),
+            (KEY_PORT_MAP.into(), self.port_map.clone()),
         ]
     }
 }
@@ -154,6 +165,7 @@ fn validate(config: &RcConfig) -> AppResult<RcConfig> {
     if !(0.0..=1000.0).contains(&config.price_per_gb) {
         return Err(AppError::Invalid("price per GB is out of range".into()));
     }
+    parse_port_map(&config.port_map, true)?;
 
     Ok(RcConfig {
         frpc_path,
@@ -169,49 +181,52 @@ fn validate(config: &RcConfig) -> AppResult<RcConfig> {
         instance_id,
         region,
         price_per_gb: config.price_per_gb,
+        port_map: config.port_map.clone(),
     })
 }
 
 async fn load_config(db: &SqlitePool) -> AppResult<RcConfig> {
     let fallback = RcConfig::default();
-    let mut stored = 0usize;
+    let mut missing: Vec<(String, String)> = Vec::new();
 
     macro_rules! field {
-        ($key:expr, $default:expr, $text:expr) => {{
+        ($key:expr, $default:expr) => {{
+            let default: String = $default;
             match settings_repo::get(db, $key).await? {
-                Some(value) => {
-                    stored += 1;
-                    value
+                Some(value) => value,
+                None => {
+                    missing.push(($key.to_string(), default.clone()));
+                    default
                 }
-                None => $default,
             }
         }};
     }
 
     let config = RcConfig {
-        frpc_path: field!(KEY_FRPC_PATH, fallback.frpc_path, true),
-        frpc_config_path: field!(KEY_FRPC_CONFIG, fallback.frpc_config_path, true),
-        log_path: field!(KEY_LOG_PATH, fallback.log_path, true),
-        relay_host: field!(KEY_RELAY_HOST, fallback.relay_host, true),
-        ssh_user: field!(KEY_SSH_USER, fallback.ssh_user, true),
-        ssh_key_path: field!(KEY_SSH_KEY, fallback.ssh_key_path, true),
-        dashboard_url: field!(KEY_DASHBOARD_URL, fallback.dashboard_url, true),
-        dashboard_auth: field!(KEY_DASHBOARD_AUTH, fallback.dashboard_auth, true),
-        rustdesk_domain: field!(KEY_RUSTDESK_DOMAIN, fallback.rustdesk_domain, true),
-        rustdesk_key: field!(KEY_RUSTDESK_KEY, fallback.rustdesk_key, true),
-        instance_id: field!(KEY_INSTANCE_ID, fallback.instance_id, true),
-        region: field!(KEY_REGION, fallback.region, true),
+        frpc_path: field!(KEY_FRPC_PATH, fallback.frpc_path.clone()),
+        frpc_config_path: field!(KEY_FRPC_CONFIG, fallback.frpc_config_path.clone()),
+        log_path: field!(KEY_LOG_PATH, fallback.log_path.clone()),
+        relay_host: field!(KEY_RELAY_HOST, fallback.relay_host.clone()),
+        ssh_user: field!(KEY_SSH_USER, fallback.ssh_user.clone()),
+        ssh_key_path: field!(KEY_SSH_KEY, fallback.ssh_key_path.clone()),
+        dashboard_url: field!(KEY_DASHBOARD_URL, fallback.dashboard_url.clone()),
+        dashboard_auth: field!(KEY_DASHBOARD_AUTH, fallback.dashboard_auth.clone()),
+        rustdesk_domain: field!(KEY_RUSTDESK_DOMAIN, fallback.rustdesk_domain.clone()),
+        rustdesk_key: field!(KEY_RUSTDESK_KEY, fallback.rustdesk_key.clone()),
+        instance_id: field!(KEY_INSTANCE_ID, fallback.instance_id.clone()),
+        region: field!(KEY_REGION, fallback.region.clone()),
         price_per_gb: match settings_repo::get(db, KEY_PRICE).await? {
-            Some(value) => {
-                stored += 1;
-                value.parse().unwrap_or(fallback.price_per_gb)
+            Some(value) => value.parse().unwrap_or(fallback.price_per_gb),
+            None => {
+                missing.push((KEY_PRICE.to_string(), format!("{}", fallback.price_per_gb)));
+                fallback.price_per_gb
             }
-            None => fallback.price_per_gb,
         },
+        port_map: field!(KEY_PORT_MAP, fallback.port_map.clone()),
     };
 
-    if stored == 0 {
-        settings_repo::set_many(db, &config.entries()).await?;
+    if !missing.is_empty() {
+        settings_repo::set_many(db, &missing).await?;
     }
 
     Ok(config)
@@ -682,6 +697,80 @@ async fn cloud_snapshot(config: &RcConfig) -> RcCloud {
     snapshot
 }
 
+fn provider_local_ports(config_path: &str) -> HashMap<String, (String, u16)> {
+    fs::read_to_string(expand_home(config_path))
+        .map(|text| parse_provider_config(&text))
+        .unwrap_or_default()
+}
+
+fn parse_provider_config(text: &str) -> HashMap<String, (String, u16)> {
+    let mut ports = HashMap::new();
+    let Ok(value) = text.parse::<toml::Value>() else {
+        return ports;
+    };
+    let Some(proxies) = value.get("proxies").and_then(|item| item.as_array()) else {
+        return ports;
+    };
+    for proxy in proxies {
+        let Some(name) = proxy.get("name").and_then(|item| item.as_str()) else {
+            continue;
+        };
+        let Some(port) = proxy.get("localPort").and_then(|item| item.as_integer()) else {
+            continue;
+        };
+        if !(1..=65535).contains(&port) {
+            continue;
+        }
+        let ip = proxy
+            .get("localIP")
+            .and_then(|item| item.as_str())
+            .unwrap_or("127.0.0.1");
+        ports.insert(name.to_string(), (ip.to_string(), port as u16));
+    }
+    ports
+}
+
+fn parse_port_map(text: &str, strict: bool) -> AppResult<HashMap<String, u16>> {
+    let mut ports = HashMap::new();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let split = line
+            .split_once('=')
+            .or_else(|| line.split_once(':'))
+            .or_else(|| line.split_once(char::is_whitespace));
+        let Some((name, port)) = split else {
+            if strict {
+                return Err(AppError::Invalid(format!("port map line is invalid: {line}")));
+            }
+            continue;
+        };
+        let name = name.trim();
+        let port = port.trim();
+        if name.is_empty() {
+            if strict {
+                return Err(AppError::Invalid("port map entry is missing a name".into()));
+            }
+            continue;
+        }
+        match port.parse::<u16>() {
+            Ok(port) if port > 0 => {
+                ports.insert(name.to_string(), port);
+            }
+            _ => {
+                if strict {
+                    return Err(AppError::Invalid(format!(
+                        "port map entry needs a port between 1 and 65535: {line}"
+                    )));
+                }
+            }
+        }
+    }
+    Ok(ports)
+}
+
 fn dashboard_base(config: &RcConfig) -> String {
     match config.dashboard_url.find("/api/") {
         Some(index) => config.dashboard_url[..index].to_string(),
@@ -702,6 +791,10 @@ pub struct RcProxy {
     today_traffic_in: i64,
     today_traffic_out: i64,
     last_start_time: String,
+    local_ip: String,
+    local_port: Option<u16>,
+    remote_port: Option<u16>,
+    access_port: Option<u16>,
 }
 
 #[derive(Serialize)]
@@ -716,6 +809,7 @@ pub struct RcProxyType {
 pub struct RcServerState {
     version: String,
     bind_port: u16,
+    relay_host: String,
     client_counts: i64,
     cur_conns: i64,
     total_traffic_in: i64,
@@ -775,7 +869,12 @@ fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
 
     let text = String::from_utf8_lossy(&output.stdout).to_string();
     let mut chunks = text.split("@@@");
-    let mut state = RcServerState::default();
+    let mut state = RcServerState {
+        relay_host: config.relay_host.clone(),
+        ..Default::default()
+    };
+    let local_ports = provider_local_ports(&config.frpc_config_path);
+    let access_ports = parse_port_map(&config.port_map, false)?;
 
     if let Some(section) = chunks.next().and_then(parse_json) {
         state.version = section["version"].as_str().unwrap_or("").into();
@@ -807,8 +906,24 @@ fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
         };
         for item in items {
             let status = item["status"].as_str().unwrap_or("").to_string();
+            let name = item["name"].as_str().unwrap_or("").to_string();
+            let local = local_ports.get(&name);
             state.proxies.push(RcProxy {
-                name: item["name"].as_str().unwrap_or("").into(),
+                local_ip: local
+                    .map(|(ip, _)| ip.clone())
+                    .or_else(|| {
+                        item["conf"]["localIP"]
+                            .as_str()
+                            .map(|value| value.to_string())
+                    })
+                    .unwrap_or_default(),
+                local_port: local.map(|(_, port)| *port),
+                remote_port: item["conf"]["remotePort"]
+                    .as_i64()
+                    .filter(|port| (1..=65535).contains(port))
+                    .map(|port| port as u16),
+                access_port: access_ports.get(&name).copied(),
+                name,
                 kind: kind.into(),
                 online: status == "online",
                 status,
@@ -1001,6 +1116,40 @@ mod tests {
     }
 
     #[test]
+    fn parses_port_maps_in_several_shapes() {
+        let ports = parse_port_map(
+            "home-rdp = 13389\nhome-ssh:10022\n\n# comment\nnas 22990\n",
+            true,
+        )
+        .unwrap();
+        assert_eq!(ports.get("home-rdp"), Some(&13389));
+        assert_eq!(ports.get("home-ssh"), Some(&10022));
+        assert_eq!(ports.get("nas"), Some(&22990));
+        assert!(!ports.contains_key("# comment"));
+    }
+
+    #[test]
+    fn rejects_invalid_port_map_lines() {
+        assert!(parse_port_map("home-rdp = 99999", true).is_err());
+        assert!(parse_port_map("home-rdp", true).is_err());
+        assert!(parse_port_map("= 13389", true).is_err());
+        assert_eq!(parse_port_map("home-rdp = 99999", false).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn reads_local_ports_from_the_provider_config() {
+        let ports = parse_provider_config(
+            "serverAddr = \"vps.example.com\"\n\n[[proxies]]\nname = \"home-rdp\"\ntype = \"stcp\"\nlocalIP = \"127.0.0.1\"\nlocalPort = 3389\n\n[[proxies]]\nname = \"home-ssh\"\ntype = \"stcp\"\nlocalPort = 22\n",
+        );
+        assert_eq!(ports.get("home-rdp"), Some(&("127.0.0.1".to_string(), 3389)));
+        assert_eq!(ports.get("home-ssh"), Some(&("127.0.0.1".to_string(), 22)));
+
+        assert!(parse_provider_config("not toml at all {{{").is_empty());
+        assert!(parse_provider_config("serverAddr = \"x\"").is_empty());
+        assert!(provider_local_ports("does-not-exist.toml").is_empty());
+    }
+
+    #[test]
     fn expands_home_prefixed_paths() {
         let expanded = expand_home(r"~\.ssh\id_ed25519");
         assert!(expanded.ends_with(r".ssh\id_ed25519"));
@@ -1019,8 +1168,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_json_chunks_with_surrounding_noise() {
-        let parsed = parse_json("warning\n{\"proxies\":[]}\n").unwrap();
+    fn parses_json_chunks_with_surrounding_noise() {        let parsed = parse_json("warning\n{\"proxies\":[]}\n").unwrap();
         assert!(parsed["proxies"].as_array().is_some());
         assert!(parse_json("no json here").is_none());
         assert!(parse_json("").is_none());
