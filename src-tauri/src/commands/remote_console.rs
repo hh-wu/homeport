@@ -38,9 +38,10 @@ const KEY_INSTANCE_ID: &str = "remote.instanceId";
 const KEY_REGION: &str = "remote.region";
 const KEY_PRICE: &str = "remote.pricePerGb";
 const KEY_PORT_MAP: &str = "remote.portMap";
+const KEY_VISITOR_CONFIG: &str = "remote.visitorConfigPath";
 
 #[cfg(test)]
-const KEYS: [&str; 14] = [
+const KEYS: [&str; 15] = [
     KEY_FRPC_PATH,
     KEY_FRPC_CONFIG,
     KEY_LOG_PATH,
@@ -55,6 +56,7 @@ const KEYS: [&str; 14] = [
     KEY_REGION,
     KEY_PRICE,
     KEY_PORT_MAP,
+    KEY_VISITOR_CONFIG,
 ];
 
 const BSS_HOST: &str = "business.aliyuncs.com";
@@ -63,6 +65,8 @@ const DEFAULT_PORT_MAP: &str = "home-rdp = 13389
 home-ssh = 10022
 server-4090-rdp = 23389
 server-4090-ssh = 20022";
+
+const DEFAULT_VISITOR_CONFIG: &str = r"C:\Users\user\Documents\deepseek-harness\default-workspace\远程访问配置\frpc-visitor-4090-独立版.toml";
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -81,6 +85,7 @@ pub struct RcConfig {
     region: String,
     price_per_gb: f64,
     port_map: String,
+    visitor_config_path: String,
 }
 
 impl Default for RcConfig {
@@ -100,6 +105,7 @@ impl Default for RcConfig {
             region: "cn-shanghai".into(),
             price_per_gb: 0.8,
             port_map: DEFAULT_PORT_MAP.into(),
+            visitor_config_path: DEFAULT_VISITOR_CONFIG.into(),
         }
     }
 }
@@ -121,6 +127,10 @@ impl RcConfig {
             (KEY_REGION.into(), self.region.clone()),
             (KEY_PRICE.into(), format!("{}", self.price_per_gb)),
             (KEY_PORT_MAP.into(), self.port_map.clone()),
+            (
+                KEY_VISITOR_CONFIG.into(),
+                self.visitor_config_path.clone(),
+            ),
         ]
     }
 }
@@ -182,6 +192,11 @@ fn validate(config: &RcConfig) -> AppResult<RcConfig> {
         region,
         price_per_gb: config.price_per_gb,
         port_map: config.port_map.clone(),
+        visitor_config_path: text_field(
+            &config.visitor_config_path,
+            "visitor config",
+            true,
+        )?,
     })
 }
 
@@ -223,6 +238,10 @@ async fn load_config(db: &SqlitePool) -> AppResult<RcConfig> {
             }
         },
         port_map: field!(KEY_PORT_MAP, fallback.port_map.clone()),
+        visitor_config_path: field!(
+            KEY_VISITOR_CONFIG,
+            fallback.visitor_config_path.clone()
+        ),
     };
 
     if !missing.is_empty() {
@@ -730,6 +749,35 @@ fn parse_provider_config(text: &str) -> HashMap<String, (String, u16)> {
     ports
 }
 
+fn visitor_access_ports(config_path: &str) -> HashMap<String, u16> {
+    fs::read_to_string(expand_home(config_path))
+        .map(|text| parse_visitor_config(&text))
+        .unwrap_or_default()
+}
+
+fn parse_visitor_config(text: &str) -> HashMap<String, u16> {
+    let mut ports = HashMap::new();
+    let Ok(value) = text.parse::<toml::Value>() else {
+        return ports;
+    };
+    let Some(visitors) = value.get("visitors").and_then(|item| item.as_array()) else {
+        return ports;
+    };
+    for visitor in visitors {
+        let Some(server_name) = visitor.get("serverName").and_then(|item| item.as_str()) else {
+            continue;
+        };
+        let Some(port) = visitor.get("bindPort").and_then(|item| item.as_integer()) else {
+            continue;
+        };
+        if !(1..=65535).contains(&port) {
+            continue;
+        }
+        ports.insert(server_name.to_string(), port as u16);
+    }
+    ports
+}
+
 fn parse_port_map(text: &str, strict: bool) -> AppResult<HashMap<String, u16>> {
     let mut ports = HashMap::new();
     for line in text.lines() {
@@ -875,6 +923,7 @@ fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
     };
     let local_ports = provider_local_ports(&config.frpc_config_path);
     let access_ports = parse_port_map(&config.port_map, false)?;
+    let visitor_ports = visitor_access_ports(&config.visitor_config_path);
 
     if let Some(section) = chunks.next().and_then(parse_json) {
         state.version = section["version"].as_str().unwrap_or("").into();
@@ -922,7 +971,10 @@ fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
                     .as_i64()
                     .filter(|port| (1..=65535).contains(port))
                     .map(|port| port as u16),
-                access_port: access_ports.get(&name).copied(),
+                access_port: access_ports
+                    .get(&name)
+                    .or_else(|| visitor_ports.get(&name))
+                    .copied(),
                 name,
                 kind: kind.into(),
                 online: status == "online",
@@ -1134,6 +1186,19 @@ mod tests {
         assert!(parse_port_map("home-rdp", true).is_err());
         assert!(parse_port_map("= 13389", true).is_err());
         assert_eq!(parse_port_map("home-rdp = 99999", false).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn reads_access_ports_by_server_name_from_the_visitor_config() {
+        let ports = parse_visitor_config(
+            "serverAddr = \"vps.example.com\"\n\n[[visitors]]\nname = \"s4090-ssh\"\ntype = \"stcp\"\nserverName = \"server-4090-ssh\"\nbindPort = 20022\n\n[[visitors]]\nname = \"s4090-rdp\"\ntype = \"stcp\"\nserverName = \"server-4090-rdp\"\nbindAddr = \"127.0.0.1\"\nbindPort = 23389\n",
+        );
+        assert_eq!(ports.get("server-4090-ssh"), Some(&20022));
+        assert_eq!(ports.get("server-4090-rdp"), Some(&23389));
+        assert_eq!(ports.get("s4090-ssh"), None);
+
+        assert!(parse_visitor_config("serverAddr = \"x\"").is_empty());
+        assert!(visitor_access_ports("does-not-exist.toml").is_empty());
     }
 
     #[test]

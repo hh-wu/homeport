@@ -11,7 +11,12 @@ type Draft = Record<keyof RcConfig, string>;
 
 const GROUPS: {
   titleKey: TKey;
-  fields: { key: keyof RcConfig; labelKey: TKey; numeric?: boolean }[];
+  fields: {
+    key: keyof RcConfig;
+    labelKey: TKey;
+    hintKey?: TKey;
+    numeric?: boolean;
+  }[];
   longFields?: { key: keyof RcConfig; labelKey: TKey; hintKey: TKey }[];
 }[] = [
   {
@@ -19,6 +24,11 @@ const GROUPS: {
     fields: [
       { key: "frpcPath", labelKey: "remote.cfgFrpcPath" },
       { key: "frpcConfigPath", labelKey: "remote.cfgFrpcConfig" },
+      {
+        key: "visitorConfigPath",
+        labelKey: "remote.cfgVisitorConfig",
+        hintKey: "remote.cfgVisitorConfigHint",
+      },
       { key: "logPath", labelKey: "remote.cfgLogPath" },
     ],
   },
@@ -122,7 +132,11 @@ function RemoteForm({ config }: { config: RcConfig }) {
       {GROUPS.map((group) => (
         <SettingsGroup key={group.titleKey} title={t(group.titleKey)}>
           {group.fields.map((field) => (
-            <Field key={field.key} label={t(field.labelKey)}>
+            <Field
+              key={field.key}
+              label={t(field.labelKey)}
+              hint={field.hintKey ? t(field.hintKey) : undefined}
+            >
               <Input
                 value={draft[field.key]}
                 inputMode={field.numeric ? "decimal" : undefined}

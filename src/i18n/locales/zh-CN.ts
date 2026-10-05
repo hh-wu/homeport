@@ -141,6 +141,9 @@ export const zhCN: Dictionary = {
     cfgMovedHint: "连接参数、中转服务器与云服务设置已移至设置页",
     cfgFrpcPath: "frpc 程序",
     cfgFrpcConfig: "frpc 配置文件",
+    cfgVisitorConfig: "访客配置文件",
+    cfgVisitorConfigHint:
+      "访问端口从该文件的 [[visitors]] 读取；端口映射的优先级更高。",
     cfgLogPath: "日志文件",
     cfgRelayHost: "中转服务器",
     cfgSshUser: "SSH 用户",

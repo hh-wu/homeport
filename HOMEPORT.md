@@ -48,12 +48,13 @@
 
 ## 配置
 
-**源码中不保留任何配置值**（除首次运行的默认值外）。全部 14 项设置存放在本地数据库的 `settings` 表，
+**源码中不保留任何配置值**（除首次运行的默认值外）。全部 15 项设置存放在本地数据库的 `settings` 表，
 键前缀 `remote.`：
 
 | 键                                                          | 含义                                         |
 | ----------------------------------------------------------- | -------------------------------------------- |
-| `remote.frpcPath` / `remote.frpcConfigPath`                 | frpc 可执行文件与配置文件                    |
+| `remote.frpcPath` / `remote.frpcConfigPath`                 | frpc 可执行文件与（提供方）配置文件          |
+| `remote.visitorConfigPath`                                  | 访客配置文件，用于读取访问端口               |
 | `remote.logPath`                                            | frpc 日志路径（用于运行时长与日志面板）      |
 | `remote.relayHost` / `remote.sshUser` / `remote.sshKeyPath` | 中转服务器的 SSH 连接参数                    |
 | `remote.dashboardUrl` / `remote.dashboardAuth`              | frps 面板地址与认证（`user:password`）       |
@@ -72,11 +73,19 @@
 
 端口映射的取值来源（frps 面板只提供一半信息，另一半需本地补齐）：
 
-| 显示项   | 来源                                      | 说明                                                                                 |
-| -------- | ----------------------------------------- | ------------------------------------------------------------------------------------ |
-| 本机端口 | 本机 `frpcConfigPath` 的 `[[proxies]]` 段 | frps 面板对 `stcp` 不返回 `localPort`，只能读本机配置                                |
-| 中转端口 | frps `serverinfo` 的 `bindPort`           | 所有代理共用，显示在卡片上部                                                         |
-| 访问端口 | `remote.portMap` 配置                     | `stcp` 的访问端口属于访问方机器的 visitor，frps 完全不记录（0.69.1 无 visitor 端点） |
+| 显示项   | 来源                                                                     | 说明                                                                                 |
+| -------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| 本机端口 | 本机 `frpcConfigPath` 的 `[[proxies]]` 段                                | frps 面板对 `stcp` 不返回 `localPort`，只能读本机配置                                |
+| 中转端口 | frps `serverinfo` 的 `bindPort`                                          | 所有代理共用，显示在卡片上部                                                         |
+| 访问端口 | `remote.portMap` 优先，其次 `remote.visitorConfigPath` 的 `[[visitors]]` | `stcp` 的访问端口属于访问方机器的 visitor，frps 完全不记录（0.69.1 无 visitor 端点） |
+
+访问端口有两个来源，覆盖两个相反方向：
+
+- **本机是访问方**（如本机连 server-4090）：端口来自本机访客配置的 `bindPort`
+- **本机是提供方**（如 server-4090 连本机）：端口写在对面机器的访客配置里，本机看不到，只能用 `remote.portMap` 手填
+
+解析访客配置时按 **`serverName`** 匹配，而不是 `[[visitors]]` 里自己的 `name`——frps 上报的是提供方的代理名
+（例如配置里 `name = "s4090-ssh"` 而 `serverName = "server-4090-ssh"`，必须用后者）。这一点有单元测试守着。
 
 因此由其它机器提供的代理（如 `server-4090-*`）只显示访问端口——本机配置里没有它的服务端口，不臆测。
 
@@ -153,7 +162,7 @@ cd src-tauri; cargo test --lib
 | `pnpm lint`                                    | 通过                             |
 | `pnpm test`                                    | 74 文件 / 514 用例全通过         |
 | `cargo test --lib`                             | 185 通过 / **13 失败**           |
-| `cargo test --lib remote_console`              | 9 个单元测试通过                 |
+| `cargo test --lib remote_console`              | 10 个单元测试通过                |
 | `cargo test --lib remote_console -- --ignored` | 真实调用阿里云接口验证签名，通过 |
 
 那 13 个失败是**上游在 Windows 上的既有问题**，与本 fork 无关：原始检出跑同一套用例，失败数量与名单完全一致。
