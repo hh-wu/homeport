@@ -12,6 +12,7 @@ import { forwardTools } from "./forwards";
 import { groupTools } from "./groups";
 import { hostTools } from "./hosts";
 import { monitorTools } from "./monitor";
+import { remoteTools } from "./remote";
 import { snippetTools } from "./snippets";
 import { taskTools } from "./tasks";
 import { terminalTools } from "./terminal";
@@ -35,6 +36,7 @@ export const ALL_TOOLS: AiTool[] = [
   ...bookmarkTools,
   ...credentialTools,
   ...monitorTools,
+  ...remoteTools,
   ...settingsTools,
   ...syncTools,
   ...updateTools,
@@ -67,6 +69,7 @@ export const TOOL_GROUPS = [
   { id: "snippets", tools: snippetTools },
   { id: "tasks", tools: taskTools },
   { id: "forwards", tools: forwardTools },
+  { id: "remote", tools: remoteTools },
   { id: "credentials", tools: credentialTools },
   { id: "settings", tools: settingsTools },
   { id: "sync", tools: syncTools },
