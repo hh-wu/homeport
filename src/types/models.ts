@@ -423,6 +423,34 @@ export interface RcRustDesk {
   relay: string;
 }
 
+export interface RcProxy {
+  name: string;
+  kind: string;
+  status: string;
+  online: boolean;
+  curConns: number;
+  todayTrafficIn: number;
+  todayTrafficOut: number;
+  lastStartTime: string;
+}
+
+export interface RcProxyType {
+  kind: string;
+  count: number;
+}
+
+export interface RcServerState {
+  version: string;
+  bindPort: number;
+  clientCounts: number;
+  curConns: number;
+  totalTrafficIn: number;
+  totalTrafficOut: number;
+  proxyTypes: RcProxyType[];
+  proxies: RcProxy[];
+  errors: string[];
+}
+
 export interface RcConfig {
   frpcPath: string;
   frpcConfigPath: string;

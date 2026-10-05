@@ -7,6 +7,7 @@ export const remoteConsoleKeys = {
   status: ["remoteConsole", "status"] as const,
   log: ["remoteConsole", "log"] as const,
   rustdesk: ["remoteConsole", "rustdesk"] as const,
+  server: ["remoteConsole", "server"] as const,
   config: ["remoteConsole", "config"] as const,
 };
 
@@ -67,8 +68,13 @@ export function useRcSetWatchdog() {
   });
 }
 
-export function useRcCheckProxies() {
-  return useMutation({ mutationFn: ipc.remoteConsole.checkProxies });
+export function useRcServerState() {
+  return useQuery({
+    queryKey: remoteConsoleKeys.server,
+    queryFn: ipc.remoteConsole.serverState,
+    refetchInterval: 60_000,
+    staleTime: 15_000,
+  });
 }
 
 export function useRcCloud() {
