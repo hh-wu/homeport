@@ -5143,6 +5143,8 @@ dependencies = [
  "dunce",
  "flate2",
  "glob",
+ "hex",
+ "hmac 0.13.0",
  "libc",
  "objc2",
  "objc2-app-kit",
@@ -5176,6 +5178,7 @@ dependencies = [
  "tokio",
  "url",
  "uuid",
+ "windows-sys 0.61.2",
  "zeroize",
 ]
 

@@ -87,6 +87,11 @@ fn initial_data(app: &AppHandle) -> TrayMenuData {
 
 fn build_menu(app: &AppHandle, data: &TrayMenuData) -> tauri::Result<Menu<Wry>> {
     let has_content = !data.tasks.is_empty() || !data.forwards.is_empty();
+    let (frpc_start, frpc_stop) = if prefers_zh(app) {
+        ("启动 frpc", "停止 frpc")
+    } else {
+        ("Start frpc", "Stop frpc")
+    };
 
     let mut builder = MenuBuilder::new(app).text("tray-show", &data.open_label);
 
@@ -127,6 +132,11 @@ fn build_menu(app: &AppHandle, data: &TrayMenuData) -> tauri::Result<Menu<Wry>> 
         builder = builder.separator();
     }
 
+    builder = builder
+        .text("tray-frpc-start", frpc_start)
+        .text("tray-frpc-stop", frpc_stop)
+        .separator();
+
     builder.text("tray-quit", &data.quit_label).build()
 }
 
@@ -134,6 +144,14 @@ fn on_menu_event(app: &AppHandle, id: &str) {
     match id {
         "tray-show" => show_main_window(app),
         "tray-quit" => app.exit(0),
+        "tray-frpc-start" => {
+            let _ = crate::commands::remote_console::start_frpc();
+            let _ = app.emit("rc://status", ());
+        }
+        "tray-frpc-stop" => {
+            let _ = crate::commands::remote_console::stop_frpc();
+            let _ = app.emit("rc://status", ());
+        }
         _ => {
             if let Some(task_id) = id.strip_prefix(TASK_ID_PREFIX) {
                 show_main_window(app);

@@ -1,6 +1,7 @@
 import {
   Gauge,
   KeyRound,
+  MonitorSmartphone,
   Network,
   Server,
   Settings,
@@ -28,6 +29,7 @@ const ACTIVITIES: { id: Activity; icon: LucideIcon; labelKey: TKey }[] = [
   { id: "tasks", icon: Workflow, labelKey: "activityBar.tasks" },
   { id: "forwards", icon: Network, labelKey: "activityBar.forwards" },
   { id: "monitor", icon: Gauge, labelKey: "activityBar.monitor" },
+  { id: "remote", icon: MonitorSmartphone, labelKey: "activityBar.remote" },
 ];
 
 const ACTIVITY_BUTTON_CLASS = cn(
