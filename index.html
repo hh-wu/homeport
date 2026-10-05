@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sageport</title>
+    <title>Homeport</title>
 
     <script>
       (function () {
         var bg = "#171b28";
         var scheme = "dark";
         try {
-          bg = localStorage.getItem("sageport.theme.bg") || bg;
-          scheme = localStorage.getItem("sageport.theme.scheme") || scheme;
+          bg = localStorage.getItem("homeport.theme.bg") || bg;
+          scheme = localStorage.getItem("homeport.theme.scheme") || scheme;
         } catch (e) {}
         var root = document.documentElement;
         root.style.backgroundColor = bg;
