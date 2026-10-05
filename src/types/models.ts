@@ -420,7 +420,23 @@ export interface RcCloud {
 export interface RcRustDesk {
   domain: string;
   key: string;
-  vps: string;
+  relay: string;
+}
+
+export interface RcConfig {
+  frpcPath: string;
+  frpcConfigPath: string;
+  logPath: string;
+  relayHost: string;
+  sshUser: string;
+  sshKeyPath: string;
+  dashboardUrl: string;
+  dashboardAuth: string;
+  rustdeskDomain: string;
+  rustdeskKey: string;
+  instanceId: string;
+  region: string;
+  pricePerGb: number;
 }
 
 export type AiProtocol = "openai" | "anthropic";

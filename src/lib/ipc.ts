@@ -38,6 +38,7 @@ import type {
   ProxyProfileInput,
   ProxyState,
   RcCloud,
+  RcConfig,
   RcRustDesk,
   RcStatus,
   ForwardStatusEvent,
@@ -550,6 +551,9 @@ export const ipc = {
       listen<string>("tray://open-forward", (event) => handler(event.payload)),
   },
   remoteConsole: {
+    config: () => invoke<RcConfig>("rc_get_config"),
+    saveConfig: (config: RcConfig) =>
+      invoke<RcConfig>("rc_set_config", { config }),
     status: () => invoke<RcStatus>("rc_status"),
     start: () => invoke<RcStatus>("rc_start"),
     stop: () => invoke<RcStatus>("rc_stop"),

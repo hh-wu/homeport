@@ -147,7 +147,13 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(update::run_periodic(handle));
             commands::sync::run_periodic(app.handle().clone());
-            commands::remote_console::spawn_watchdog();
+            commands::remote_console::spawn_watchdog(app.handle().clone());
+
+            let config_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let state = config_handle.state::<AppState>();
+                commands::remote_console::ensure_config(&state.db).await;
+            });
 
             Ok(())
         })
@@ -286,6 +292,8 @@ pub fn run() {
             commands::ai::ai_session_get,
             commands::ai::ai_session_save,
             commands::ai::ai_session_delete,
+            commands::remote_console::rc_get_config,
+            commands::remote_console::rc_set_config,
             commands::remote_console::rc_status,
             commands::remote_console::rc_start,
             commands::remote_console::rc_stop,

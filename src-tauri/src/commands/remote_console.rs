@@ -3,29 +3,216 @@ use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use hmac::{Hmac, KeyInit, Mac};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use sqlx::SqlitePool;
+use tauri::{AppHandle, Manager};
 
 use crate::error::{AppError, AppResult};
-
-const FRP_DIR: &str = r"D:\Programs\frp";
-const FRPC_EXE: &str = r"D:\Programs\frp\frpc.exe";
-const FRPC_CFG: &str = r"D:\Programs\frp\frpc.toml";
-const FRPC_LOG: &str = r"D:\Programs\frp\frpc.log";
-
-const VPS_DOMAIN: &str = "vps.nick0x01.com";
-const RUSTDESK_DOMAIN: &str = "rustdesk.nick0x01.com";
-const RUSTDESK_KEY: &str = "redacted=";
-
-const ECS_HOST: &str = "ecs.cn-shanghai.aliyuncs.com";
-const BSS_HOST: &str = "business.aliyuncs.com";
-const METRICS_HOST: &str = "metrics.cn-shanghai.aliyuncs.com";
-const REGION_ID: &str = "cn-shanghai";
-const INSTANCE_ID: &str = "redacted";
-const DASH_AUTH: &str = "admin:redacted";
-const PRICE_PER_GB: f64 = 0.8;
+use crate::repository::settings_repo;
+use crate::state::AppState;
 
 static WATCHDOG: AtomicBool = AtomicBool::new(false);
+
+const KEY_FRPC_PATH: &str = "remote.frpcPath";
+const KEY_FRPC_CONFIG: &str = "remote.frpcConfigPath";
+const KEY_LOG_PATH: &str = "remote.logPath";
+const KEY_RELAY_HOST: &str = "remote.relayHost";
+const KEY_SSH_USER: &str = "remote.sshUser";
+const KEY_SSH_KEY: &str = "remote.sshKeyPath";
+const KEY_DASHBOARD_URL: &str = "remote.dashboardUrl";
+const KEY_DASHBOARD_AUTH: &str = "remote.dashboardAuth";
+const KEY_RUSTDESK_DOMAIN: &str = "remote.rustdeskDomain";
+const KEY_RUSTDESK_KEY: &str = "remote.rustdeskKey";
+const KEY_INSTANCE_ID: &str = "remote.instanceId";
+const KEY_REGION: &str = "remote.region";
+const KEY_PRICE: &str = "remote.pricePerGb";
+
+#[cfg(test)]
+const KEYS: [&str; 13] = [
+    KEY_FRPC_PATH,
+    KEY_FRPC_CONFIG,
+    KEY_LOG_PATH,
+    KEY_RELAY_HOST,
+    KEY_SSH_USER,
+    KEY_SSH_KEY,
+    KEY_DASHBOARD_URL,
+    KEY_DASHBOARD_AUTH,
+    KEY_RUSTDESK_DOMAIN,
+    KEY_RUSTDESK_KEY,
+    KEY_INSTANCE_ID,
+    KEY_REGION,
+    KEY_PRICE,
+];
+
+const BSS_HOST: &str = "business.aliyuncs.com";
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RcConfig {
+    frpc_path: String,
+    frpc_config_path: String,
+    log_path: String,
+    relay_host: String,
+    ssh_user: String,
+    ssh_key_path: String,
+    dashboard_url: String,
+    dashboard_auth: String,
+    rustdesk_domain: String,
+    rustdesk_key: String,
+    instance_id: String,
+    region: String,
+    price_per_gb: f64,
+}
+
+impl Default for RcConfig {
+    fn default() -> Self {
+        Self {
+            frpc_path: r"D:\Programs\frp\frpc.exe".into(),
+            frpc_config_path: r"D:\Programs\frp\frpc.toml".into(),
+            log_path: r"D:\Programs\frp\frpc.log".into(),
+            relay_host: "vps.nick0x01.com".into(),
+            ssh_user: "root".into(),
+            ssh_key_path: r"~\.ssh\id_ed25519".into(),
+            dashboard_url: "http://127.0.0.1:7500/api/proxy/stcp".into(),
+            dashboard_auth: String::new(),
+            rustdesk_domain: "rustdesk.nick0x01.com".into(),
+            rustdesk_key: String::new(),
+            instance_id: String::new(),
+            region: "cn-shanghai".into(),
+            price_per_gb: 0.8,
+        }
+    }
+}
+
+impl RcConfig {
+    fn entries(&self) -> Vec<(String, String)> {
+        vec![
+            (KEY_FRPC_PATH.into(), self.frpc_path.clone()),
+            (KEY_FRPC_CONFIG.into(), self.frpc_config_path.clone()),
+            (KEY_LOG_PATH.into(), self.log_path.clone()),
+            (KEY_RELAY_HOST.into(), self.relay_host.clone()),
+            (KEY_SSH_USER.into(), self.ssh_user.clone()),
+            (KEY_SSH_KEY.into(), self.ssh_key_path.clone()),
+            (KEY_DASHBOARD_URL.into(), self.dashboard_url.clone()),
+            (KEY_DASHBOARD_AUTH.into(), self.dashboard_auth.clone()),
+            (KEY_RUSTDESK_DOMAIN.into(), self.rustdesk_domain.clone()),
+            (KEY_RUSTDESK_KEY.into(), self.rustdesk_key.clone()),
+            (KEY_INSTANCE_ID.into(), self.instance_id.clone()),
+            (KEY_REGION.into(), self.region.clone()),
+            (KEY_PRICE.into(), format!("{}", self.price_per_gb)),
+        ]
+    }
+}
+
+fn text_field(value: &str, field: &str, allow_empty: bool) -> AppResult<String> {
+    let trimmed = value.trim();
+    if !allow_empty && trimmed.is_empty() {
+        return Err(AppError::Invalid(format!("{field} is required")));
+    }
+    if trimmed.chars().count() > 512 || trimmed.chars().any(char::is_control) {
+        return Err(AppError::Invalid(format!("{field} is invalid")));
+    }
+    Ok(trimmed.to_string())
+}
+
+fn validate(config: &RcConfig) -> AppResult<RcConfig> {
+    let frpc_path = text_field(&config.frpc_path, "frpc path", false)?;
+    if !frpc_path.to_ascii_lowercase().ends_with(".exe") {
+        return Err(AppError::Invalid("frpc path must point to an exe".into()));
+    }
+    let frpc_config_path = text_field(&config.frpc_config_path, "frpc config", false)?;
+    let log_path = text_field(&config.log_path, "log path", false)?;
+    let relay_host = text_field(&config.relay_host, "relay host", false)?;
+    let ssh_user = text_field(&config.ssh_user, "ssh user", false)?;
+    let ssh_key_path = text_field(&config.ssh_key_path, "ssh key", false)?;
+    let dashboard_url = text_field(&config.dashboard_url, "dashboard url", true)?;
+    if !dashboard_url.is_empty() && !dashboard_url.starts_with("http") {
+        return Err(AppError::Invalid(
+            "dashboard url must start with http".into(),
+        ));
+    }
+    let dashboard_auth = text_field(&config.dashboard_auth, "dashboard auth", true)?;
+    if !dashboard_auth.is_empty() && !dashboard_auth.contains(':') {
+        return Err(AppError::Invalid(
+            "dashboard auth must be user:password".into(),
+        ));
+    }
+    let rustdesk_domain = text_field(&config.rustdesk_domain, "RustDesk server", true)?;
+    let rustdesk_key = text_field(&config.rustdesk_key, "RustDesk key", true)?;
+    let instance_id = text_field(&config.instance_id, "instance id", true)?;
+    let region = text_field(&config.region, "region", false)?;
+    if !(0.0..=1000.0).contains(&config.price_per_gb) {
+        return Err(AppError::Invalid("price per GB is out of range".into()));
+    }
+
+    Ok(RcConfig {
+        frpc_path,
+        frpc_config_path,
+        log_path,
+        relay_host,
+        ssh_user,
+        ssh_key_path,
+        dashboard_url,
+        dashboard_auth,
+        rustdesk_domain,
+        rustdesk_key,
+        instance_id,
+        region,
+        price_per_gb: config.price_per_gb,
+    })
+}
+
+async fn load_config(db: &SqlitePool) -> AppResult<RcConfig> {
+    let fallback = RcConfig::default();
+    let mut stored = 0usize;
+
+    macro_rules! field {
+        ($key:expr, $default:expr, $text:expr) => {{
+            match settings_repo::get(db, $key).await? {
+                Some(value) => {
+                    stored += 1;
+                    value
+                }
+                None => $default,
+            }
+        }};
+    }
+
+    let config = RcConfig {
+        frpc_path: field!(KEY_FRPC_PATH, fallback.frpc_path, true),
+        frpc_config_path: field!(KEY_FRPC_CONFIG, fallback.frpc_config_path, true),
+        log_path: field!(KEY_LOG_PATH, fallback.log_path, true),
+        relay_host: field!(KEY_RELAY_HOST, fallback.relay_host, true),
+        ssh_user: field!(KEY_SSH_USER, fallback.ssh_user, true),
+        ssh_key_path: field!(KEY_SSH_KEY, fallback.ssh_key_path, true),
+        dashboard_url: field!(KEY_DASHBOARD_URL, fallback.dashboard_url, true),
+        dashboard_auth: field!(KEY_DASHBOARD_AUTH, fallback.dashboard_auth, true),
+        rustdesk_domain: field!(KEY_RUSTDESK_DOMAIN, fallback.rustdesk_domain, true),
+        rustdesk_key: field!(KEY_RUSTDESK_KEY, fallback.rustdesk_key, true),
+        instance_id: field!(KEY_INSTANCE_ID, fallback.instance_id, true),
+        region: field!(KEY_REGION, fallback.region, true),
+        price_per_gb: match settings_repo::get(db, KEY_PRICE).await? {
+            Some(value) => {
+                stored += 1;
+                value.parse().unwrap_or(fallback.price_per_gb)
+            }
+            None => fallback.price_per_gb,
+        },
+    };
+
+    if stored == 0 {
+        settings_repo::set_many(db, &config.entries()).await?;
+    }
+
+    Ok(config)
+}
+
+async fn save_config(db: &SqlitePool, config: &RcConfig) -> AppResult<RcConfig> {
+    let config = validate(config)?;
+    settings_repo::set_many(db, &config.entries()).await?;
+    Ok(config)
+}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,7 +229,7 @@ pub struct RcStatus {
 pub struct RcRustDesk {
     domain: String,
     key: String,
-    vps: String,
+    relay: String,
 }
 
 #[derive(Serialize, Default)]
@@ -106,14 +293,14 @@ fn frpc_pids() -> Vec<u32> {
     Vec::new()
 }
 
-fn log_lines() -> Vec<String> {
-    fs::read_to_string(FRPC_LOG)
+fn log_lines(path: &str) -> Vec<String> {
+    fs::read_to_string(path)
         .map(|text| text.lines().map(str::to_string).collect())
         .unwrap_or_default()
 }
 
-fn uptime_text() -> Option<String> {
-    for line in log_lines().iter().rev() {
+fn uptime_text(path: &str) -> Option<String> {
+    for line in log_lines(path).iter().rev() {
         if line.contains("start frpc service") {
             let stamp: Vec<&str> = line.split(' ').take(2).collect();
             if stamp.len() == 2 {
@@ -135,21 +322,40 @@ fn uptime_text() -> Option<String> {
     None
 }
 
-pub fn start_frpc() -> AppResult<()> {
+fn home_dir() -> String {
+    std::env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\Default".into())
+}
+
+fn expand_home(path: &str) -> String {
+    if let Some(rest) = path
+        .strip_prefix("~\\")
+        .or_else(|| path.strip_prefix("~/"))
+    {
+        format!("{}\\{}", home_dir(), rest)
+    } else {
+        path.to_string()
+    }
+}
+
+fn start_frpc(config: &RcConfig) -> AppResult<()> {
     if !frpc_pids().is_empty() {
         return Ok(());
     }
-    if !std::path::Path::new(FRPC_EXE).exists() {
-        return Err(AppError::NotFound(FRPC_EXE.into()));
+    if !std::path::Path::new(&config.frpc_path).exists() {
+        return Err(AppError::NotFound(config.frpc_path.clone()));
     }
-    Command::new(FRPC_EXE)
-        .args(["-c", FRPC_CFG])
-        .current_dir(FRP_DIR)
+    let dir = std::path::Path::new(&config.frpc_path)
+        .parent()
+        .map(|path| path.to_path_buf())
+        .unwrap_or_default();
+    Command::new(&config.frpc_path)
+        .args(["-c", &config.frpc_config_path])
+        .current_dir(dir)
         .spawn()?;
     Ok(())
 }
 
-pub fn stop_frpc() -> AppResult<()> {
+fn stop_frpc() -> AppResult<()> {
     if frpc_pids().is_empty() {
         return Ok(());
     }
@@ -163,14 +369,18 @@ pub fn stop_frpc() -> AppResult<()> {
     }
 }
 
-fn status_snapshot() -> RcStatus {
+fn status_snapshot(config: &RcConfig) -> RcStatus {
     let pids = frpc_pids();
     let running = !pids.is_empty();
-    let lines = log_lines();
+    let lines = log_lines(&config.log_path);
     RcStatus {
         running,
         pids,
-        uptime: if running { uptime_text() } else { None },
+        uptime: if running {
+            uptime_text(&config.log_path)
+        } else {
+            None
+        },
         last_log: lines.last().cloned().unwrap_or_default(),
         watchdog: WATCHDOG.load(Ordering::Relaxed),
     }
@@ -199,10 +409,6 @@ fn hmac_sha256_hex(key: &[u8], data: &str) -> String {
     let mut mac = Hmac::<Sha256>::new_from_slice(key).expect("hmac key");
     mac.update(data.as_bytes());
     hex::encode(mac.finalize().into_bytes())
-}
-
-fn home_dir() -> String {
-    std::env::var("USERPROFILE").unwrap_or_else(|_| "C:\\Users\\Default".into())
 }
 
 fn credentials() -> AppResult<(String, String)> {
@@ -308,18 +514,20 @@ async fn aliyun_call(
     serde_json::from_str(&body).map_err(AppError::Serde)
 }
 
-async fn latest_metric(metric: &str) -> Option<f64> {
+fn dimension(instance_id: &str) -> String {
+    format!(r#"[{{"instanceId":"{instance_id}"}}]"#)
+}
+
+async fn latest_metric(config: &RcConfig, metric: &str) -> Option<f64> {
+    let host = format!("metrics.{}.aliyuncs.com", config.region);
     let data = aliyun_call(
-        METRICS_HOST,
+        &host,
         "DescribeMetricLast",
         "2019-01-01",
         &[
             ("Namespace".into(), "acs_ecs_dashboard".into()),
             ("MetricName".into(), metric.into()),
-            (
-                "Dimensions".into(),
-                format!(r#"[{{"instanceId":"{INSTANCE_ID}"}}]"#),
-            ),
+            ("Dimensions".into(), dimension(&config.instance_id)),
             ("Period".into(), "60".into()),
         ],
     )
@@ -333,22 +541,20 @@ async fn latest_metric(metric: &str) -> Option<f64> {
         .or_else(|| last["Minimum"].as_f64())
 }
 
-async fn month_traffic(metric: &str) -> Option<f64> {
+async fn month_traffic(config: &RcConfig, metric: &str) -> Option<f64> {
     use chrono::Datelike;
     let now = chrono::Local::now();
     let start = chrono::NaiveDate::from_ymd_opt(now.year(), now.month(), 1)?.and_hms_opt(0, 0, 0)?;
     let format = "%Y-%m-%d %H:%M:%S";
+    let host = format!("metrics.{}.aliyuncs.com", config.region);
     let data = aliyun_call(
-        METRICS_HOST,
+        &host,
         "DescribeMetricList",
         "2019-01-01",
         &[
             ("Namespace".into(), "acs_ecs_dashboard".into()),
             ("MetricName".into(), metric.into()),
-            (
-                "Dimensions".into(),
-                format!(r#"[{{"instanceId":"{INSTANCE_ID}"}}]"#),
-            ),
+            ("Dimensions".into(), dimension(&config.instance_id)),
             ("StartTime".into(), start.format(format).to_string()),
             (
                 "EndTime".into(),
@@ -370,20 +576,31 @@ async fn month_traffic(metric: &str) -> Option<f64> {
     Some(bits / 8.0 / 1024.0 / 1024.0 / 1024.0)
 }
 
-async fn cloud_snapshot() -> RcCloud {
+async fn cloud_snapshot(config: &RcConfig) -> RcCloud {
     let mut snapshot = RcCloud {
         instance_status: "unknown".into(),
         cycle: chrono::Local::now().format("%Y-%m").to_string(),
         ..Default::default()
     };
 
+    if config.instance_id.is_empty() {
+        snapshot
+            .errors
+            .push("instance id is not configured".into());
+        return snapshot;
+    }
+
+    let ecs_host = format!("ecs.{}.aliyuncs.com", config.region);
     match aliyun_call(
-        ECS_HOST,
+        &ecs_host,
         "DescribeInstances",
         "2014-05-26",
         &[
-            ("RegionId".into(), REGION_ID.into()),
-            ("InstanceIds".into(), format!(r#"["{INSTANCE_ID}"]"#)),
+            ("RegionId".into(), config.region.clone()),
+            (
+                "InstanceIds".into(),
+                format!(r#"["{}"]"#, config.instance_id),
+            ),
         ],
     )
     .await
@@ -423,7 +640,7 @@ async fn cloud_snapshot() -> RcCloud {
         "2017-12-14",
         &[
             ("BillingCycle".into(), snapshot.cycle.clone()),
-            ("InstanceID".into(), INSTANCE_ID.into()),
+            ("InstanceID".into(), config.instance_id.clone()),
             ("Granularity".into(), "MONTHLY".into()),
         ],
     )
@@ -444,29 +661,39 @@ async fn cloud_snapshot() -> RcCloud {
         Err(error) => snapshot.errors.push(format!("bill: {error}")),
     }
 
-    snapshot.out_rate = latest_metric("VPC_PublicIP_InternetOutRate").await;
-    snapshot.in_rate = latest_metric("VPC_PublicIP_InternetInRate").await;
-    snapshot.out_gb = month_traffic("VPC_PublicIP_InternetOutRate").await;
-    snapshot.in_gb = month_traffic("VPC_PublicIP_InternetInRate").await;
-    snapshot.est_fee = snapshot.out_gb.map(|gb| gb * PRICE_PER_GB);
+    snapshot.out_rate = latest_metric(config, "VPC_PublicIP_InternetOutRate").await;
+    snapshot.in_rate = latest_metric(config, "VPC_PublicIP_InternetInRate").await;
+    snapshot.out_gb = month_traffic(config, "VPC_PublicIP_InternetOutRate").await;
+    snapshot.in_gb = month_traffic(config, "VPC_PublicIP_InternetInRate").await;
+    snapshot.est_fee = snapshot.out_gb.map(|gb| gb * config.price_per_gb);
 
     snapshot
 }
 
-fn check_proxies_blocking() -> AppResult<String> {
-    let key = format!("{}\\.ssh\\id_ed25519", home_dir());
-    let remote = format!("curl -s -u {DASH_AUTH} http://127.0.0.1:7500/api/proxy/stcp");
+fn check_proxies_blocking(config: &RcConfig) -> AppResult<String> {
+    if config.dashboard_url.is_empty() {
+        return Err(AppError::Invalid("dashboard url is not configured".into()));
+    }
+    if config.dashboard_auth.is_empty() {
+        return Err(AppError::Invalid(
+            "dashboard credentials are not configured".into(),
+        ));
+    }
+    let remote = format!(
+        "curl -s -u {} {}",
+        config.dashboard_auth, config.dashboard_url
+    );
     let output = Command::new("ssh")
         .args([
             "-i",
-            &key,
+            &expand_home(&config.ssh_key_path),
             "-o",
             "BatchMode=yes",
             "-o",
             "ConnectTimeout=8",
             "-o",
             "StrictHostKeyChecking=accept-new",
-            &format!("root@{VPS_DOMAIN}"),
+            &format!("{}@{}", config.ssh_user, config.relay_host),
             &remote,
         ])
         .output()?;
@@ -501,21 +728,37 @@ fn check_proxies_blocking() -> AppResult<String> {
 }
 
 #[tauri::command]
-pub async fn rc_status() -> AppResult<RcStatus> {
-    Ok(status_snapshot())
+pub async fn rc_get_config(state: tauri::State<'_, AppState>) -> AppResult<RcConfig> {
+    load_config(&state.db).await
 }
 
 #[tauri::command]
-pub async fn rc_start() -> AppResult<RcStatus> {
-    start_frpc()?;
+pub async fn rc_set_config(
+    state: tauri::State<'_, AppState>,
+    config: RcConfig,
+) -> AppResult<RcConfig> {
+    save_config(&state.db, &config).await
+}
+
+#[tauri::command]
+pub async fn rc_status(state: tauri::State<'_, AppState>) -> AppResult<RcStatus> {
+    let config = load_config(&state.db).await?;
+    Ok(status_snapshot(&config))
+}
+
+#[tauri::command]
+pub async fn rc_start(state: tauri::State<'_, AppState>) -> AppResult<RcStatus> {
+    let config = load_config(&state.db).await?;
+    start_frpc(&config)?;
     tokio::time::sleep(std::time::Duration::from_millis(900)).await;
-    Ok(status_snapshot())
+    Ok(status_snapshot(&config))
 }
 
 #[tauri::command]
-pub async fn rc_stop() -> AppResult<RcStatus> {
+pub async fn rc_stop(state: tauri::State<'_, AppState>) -> AppResult<RcStatus> {
+    let config = load_config(&state.db).await?;
     stop_frpc()?;
-    Ok(status_snapshot())
+    Ok(status_snapshot(&config))
 }
 
 #[tauri::command]
@@ -525,51 +768,145 @@ pub async fn rc_set_watchdog(enabled: bool) -> AppResult<bool> {
 }
 
 #[tauri::command]
-pub async fn rc_check_proxies() -> AppResult<String> {
-    tauri::async_runtime::spawn_blocking(check_proxies_blocking)
+pub async fn rc_check_proxies(state: tauri::State<'_, AppState>) -> AppResult<String> {
+    let config = load_config(&state.db).await?;
+    tauri::async_runtime::spawn_blocking(move || check_proxies_blocking(&config))
         .await
         .map_err(|error| AppError::Other(error.to_string()))?
 }
 
 #[tauri::command]
-pub async fn rc_cloud() -> AppResult<RcCloud> {
-    Ok(cloud_snapshot().await)
+pub async fn rc_cloud(state: tauri::State<'_, AppState>) -> AppResult<RcCloud> {
+    let config = load_config(&state.db).await?;
+    Ok(cloud_snapshot(&config).await)
 }
 
 #[tauri::command]
-pub async fn rc_log_tail(lines: usize) -> AppResult<String> {
-    let all = log_lines();
+pub async fn rc_log_tail(state: tauri::State<'_, AppState>, lines: usize) -> AppResult<String> {
+    let config = load_config(&state.db).await?;
+    let all = log_lines(&config.log_path);
     let start = all.len().saturating_sub(lines.clamp(1, 2000));
     Ok(all[start..].join("\n"))
 }
 
 #[tauri::command]
-pub async fn rc_open_log() -> AppResult<()> {
-    if !std::path::Path::new(FRPC_LOG).exists() {
-        return Err(AppError::NotFound(FRPC_LOG.into()));
+pub async fn rc_open_log(state: tauri::State<'_, AppState>) -> AppResult<()> {
+    let config = load_config(&state.db).await?;
+    if !std::path::Path::new(&config.log_path).exists() {
+        return Err(AppError::NotFound(config.log_path));
     }
     Command::new("cmd")
-        .args(["/C", "start", "", FRPC_LOG])
+        .args(["/C", "start", "", &config.log_path])
         .spawn()?;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn rc_rustdesk_info() -> AppResult<RcRustDesk> {
+pub async fn rc_rustdesk_info(state: tauri::State<'_, AppState>) -> AppResult<RcRustDesk> {
+    let config = load_config(&state.db).await?;
     Ok(RcRustDesk {
-        domain: RUSTDESK_DOMAIN.into(),
-        key: RUSTDESK_KEY.into(),
-        vps: format!("{VPS_DOMAIN}:7000"),
+        domain: config.rustdesk_domain,
+        key: config.rustdesk_key,
+        relay: format!("{}:7000", config.relay_host),
     })
 }
 
-pub fn spawn_watchdog() {
+pub async fn ensure_config(db: &SqlitePool) {
+    let _ = load_config(db).await;
+}
+
+pub fn spawn_watchdog(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-            if WATCHDOG.load(Ordering::Relaxed) && frpc_pids().is_empty() {
-                let _ = start_frpc();
+            if !WATCHDOG.load(Ordering::Relaxed) || !frpc_pids().is_empty() {
+                continue;
+            }
+            let state = app.state::<AppState>();
+            if let Ok(config) = load_config(&state.db).await {
+                let _ = start_frpc(&config);
             }
         }
     });
+}
+
+pub async fn start_from_tray(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    if let Ok(config) = load_config(&state.db).await {
+        let _ = start_frpc(&config);
+    }
+}
+
+pub async fn stop_from_tray() {
+    let _ = stop_frpc();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_invalid_configuration() {
+        let mut config = RcConfig {
+            frpc_path: "not-a-path".into(),
+            ..RcConfig::default()
+        };
+        assert!(validate(&config).is_err());
+
+        config = RcConfig {
+            relay_host: "  ".into(),
+            ..RcConfig::default()
+        };
+        assert!(validate(&config).is_err());
+
+        config = RcConfig {
+            dashboard_auth: "admin".into(),
+            ..RcConfig::default()
+        };
+        assert!(validate(&config).is_err());
+
+        config = RcConfig {
+            price_per_gb: -1.0,
+            ..RcConfig::default()
+        };
+        assert!(validate(&config).is_err());
+    }
+
+    #[test]
+    fn trims_and_accepts_a_valid_configuration() {
+        let config = RcConfig {
+            relay_host: " vps.example.com ".into(),
+            instance_id: " i-123 ".into(),
+            ..RcConfig::default()
+        };
+        let validated = validate(&config).unwrap();
+        assert_eq!(validated.relay_host, "vps.example.com");
+        assert_eq!(validated.instance_id, "i-123");
+    }
+
+    #[test]
+    fn every_key_is_written_once() {
+        let entries = RcConfig::default().entries();
+        assert_eq!(entries.len(), KEYS.len());
+        for key in KEYS {
+            assert!(entries.iter().any(|(entry, _)| entry == key), "{key}");
+        }
+    }
+
+    #[test]
+    fn expands_home_prefixed_paths() {
+        let expanded = expand_home(r"~\.ssh\id_ed25519");
+        assert!(expanded.ends_with(r".ssh\id_ed25519"));
+        assert!(!expanded.starts_with('~'));
+        assert_eq!(expand_home(r"D:\keys\id"), r"D:\keys\id");
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn aliyun_signing_reaches_the_account_endpoint() {
+        let data = aliyun_call(BSS_HOST, "QueryAccountBalance", "2017-12-14", &[])
+            .await
+            .expect("account balance");
+        assert!(data["Data"]["AvailableAmount"].is_string());
+    }
 }

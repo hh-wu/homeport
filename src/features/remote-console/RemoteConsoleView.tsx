@@ -20,13 +20,16 @@ import {
   remoteConsoleKeys,
   useRcCheckProxies,
   useRcCloud,
+  useRcConfig,
   useRcLog,
   useRcRustDesk,
+  useRcSaveConfig,
   useRcSetWatchdog,
   useRcStart,
   useRcStatus,
   useRcStop,
 } from "./api";
+import { ConfigForm } from "./ConfigForm";
 
 function formatRate(bps: number | null) {
   if (bps === null) return "—";
@@ -73,6 +76,8 @@ export function RemoteConsoleView() {
   const setWatchdog = useRcSetWatchdog();
   const checkProxies = useRcCheckProxies();
   const loadCloud = useRcCloud();
+  const configQuery = useRcConfig();
+  const saveConfig = useRcSaveConfig();
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
 
   useEffect(() => {
@@ -335,7 +340,7 @@ export function RemoteConsoleView() {
             />
             <Metric
               label={t("remote.rustdeskRelay")}
-              value={rustdesk?.vps ?? "—"}
+              value={rustdesk?.relay ?? "—"}
             />
             <p className="mt-1 font-mono text-[0.6875rem] break-all text-muted-foreground">
               {rustdesk?.key ?? ""}
@@ -388,6 +393,31 @@ export function RemoteConsoleView() {
           <pre className="mt-2 max-h-52 overflow-auto rounded-md bg-surface-sunken p-2 font-mono text-[0.6875rem] leading-relaxed text-muted-foreground">
             {logQuery.data || t("remote.logEmpty")}
           </pre>
+        </section>
+        <section className="rounded-md border border-border-subtle bg-surface-raised p-3">
+          <SectionHeader
+            title={t("remote.cfgTitle")}
+            description={t("remote.cfgDescription")}
+          />
+          {configQuery.data ? (
+            <ConfigForm
+              config={configQuery.data}
+              saving={saveConfig.isPending}
+              onSave={(next) => {
+                saveConfig.mutate(next, {
+                  onSuccess: () => toast.success(t("remote.cfgSaved")),
+                  onError: (error) =>
+                    toast.error(t("remote.cfgFailed"), errorMessage(error)),
+                });
+              }}
+            />
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {configQuery.error
+                ? errorMessage(configQuery.error)
+                : t("remote.cloudIdle")}
+            </p>
+          )}
         </section>
       </div>
 
