@@ -145,6 +145,9 @@ export const en = {
       "Connection details, relay, and cloud options live in the settings page",
     cfgFrpcPath: "frpc binary",
     cfgFrpcConfig: "frpc config file",
+    cfgVisitorConfig: "Visitor config file",
+    cfgVisitorConfigHint:
+      "Access ports are read from the visitors in this file. The port map takes priority.",
     cfgLogPath: "Log file",
     cfgRelayHost: "Relay host",
     cfgSshUser: "SSH user",
@@ -153,7 +156,7 @@ export const en = {
     cfgDashboardAuth: "Dashboard credentials",
     cfgPortMap: "Port map",
     cfgPortMapHint:
-      "One entry per line as proxy name = access port. Local ports are read from the frpc config file.",
+      "One entry per line as proxy name = access port. Takes priority over the visitor config file.",
     cfgRustdeskDomain: "RustDesk server",
     cfgRustdeskKey: "RustDesk key",
     cfgInstanceId: "ECS instance ID",

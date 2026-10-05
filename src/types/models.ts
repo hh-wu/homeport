@@ -471,6 +471,7 @@ export interface RcConfig {
   region: string;
   pricePerGb: number;
   portMap: string;
+  visitorConfigPath: string;
 }
 
 export type AiProtocol = "openai" | "anthropic";
