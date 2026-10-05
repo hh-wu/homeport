@@ -7,7 +7,7 @@ license = "GPL-3.0-only"
 edition = "2021"
 
 [[bin]]
-name = "Sageport"
+name = "SageportRC"
 path = "src/main.rs"
 
 [lib]
