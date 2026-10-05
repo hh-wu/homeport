@@ -456,6 +456,12 @@ export interface RcServerState {
   errors: string[];
 }
 
+export interface RcVerify {
+  ok: boolean;
+  code: string;
+  detail: string;
+}
+
 export interface RcConfig {
   frpcPath: string;
   frpcConfigPath: string;

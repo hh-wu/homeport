@@ -75,6 +75,7 @@ describe("locale parity", () => {
       "MB",
       "MinIO",
       "Nextcloud",
+      "Notepad",
       "OAuth",
       "Ollama",
       "OneDrive",

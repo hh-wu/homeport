@@ -89,6 +89,12 @@ export function useRcConfig() {
   });
 }
 
+export function useRcVerify() {
+  return useMutation({
+    mutationFn: (section: string) => ipc.remoteConsole.verify(section),
+  });
+}
+
 export function useRcSaveConfig() {
   const queryClient = useQueryClient();
   return useMutation({

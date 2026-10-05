@@ -1062,14 +1062,337 @@ pub async fn rc_log_tail(state: tauri::State<'_, AppState>, lines: usize) -> App
     Ok(all[start..].join("\n"))
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RcVerify {
+    ok: bool,
+    code: String,
+    detail: String,
+}
+
+fn run_capture(command: &mut Command) -> (bool, String) {
+    hide_console(command);
+    match command.output() {
+        Ok(output) => {
+            let mut text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            if !stderr.is_empty() {
+                if !text.is_empty() {
+                    text.push('\n');
+                }
+                text.push_str(&stderr);
+            }
+            (output.status.success(), text)
+        }
+        Err(error) => (false, error.to_string()),
+    }
+}
+
+fn verify_result(ok: bool, success: &str, failure: &str, detail: String) -> RcVerify {
+    RcVerify {
+        ok,
+        code: if ok { success } else { failure }.into(),
+        detail,
+    }
+}
+
+fn verify_config_parse(path: &str) -> Option<String> {
+    if !std::path::Path::new(&expand_home(path)).exists() {
+        return Some(format!("not found: {path}"));
+    }
+    None
+}
+
+fn verify_frpc(config: &RcConfig) -> RcVerify {
+    if !std::path::Path::new(&config.frpc_path).exists() {
+        return RcVerify {
+            ok: false,
+            code: "binaryMissing".into(),
+            detail: config.frpc_path.clone(),
+        };
+    }
+
+    let mut details = Vec::new();
+    let mut ok = true;
+    for (label, path) in [
+        ("frpc", &config.frpc_config_path),
+        ("visitor", &config.visitor_config_path),
+    ] {
+        let path = path.trim();
+        if path.is_empty() {
+            continue;
+        }
+        if let Some(message) = verify_config_parse(path) {
+            ok = false;
+            details.push(format!("{label}: {message}"));
+            continue;
+        }
+        let mut command = Command::new(&config.frpc_path);
+        command.args(["verify", "-c", &expand_home(path)]);
+        let (passed, detail) = run_capture(&mut command);
+        if !passed {
+            ok = false;
+        }
+        details.push(format!("{label}: {detail}"));
+    }
+
+    if details.is_empty() {
+        return RcVerify {
+            ok: false,
+            code: "pathsMissing".into(),
+            detail: String::new(),
+        };
+    }
+
+    verify_result(ok, "frpcOk", "frpcFailed", details.join("\n"))
+}
+
+fn verify_relay(config: &RcConfig) -> RcVerify {
+    let key = expand_home(&config.ssh_key_path);
+    if !std::path::Path::new(&key).exists() {
+        return RcVerify {
+            ok: false,
+            code: "keyMissing".into(),
+            detail: key,
+        };
+    }
+
+    let mut command = Command::new("ssh");
+    command.args([
+        "-i",
+        &key,
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=8",
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+        &format!("{}@{}", config.ssh_user, config.relay_host),
+        "uname -sr",
+    ]);
+    let (ok, detail) = run_capture(&mut command);
+    verify_result(ok, "relayOk", "relayFailed", detail)
+}
+
+fn verify_dashboard(config: &RcConfig) -> RcVerify {
+    if config.dashboard_url.trim().is_empty() || config.dashboard_auth.trim().is_empty() {
+        return RcVerify {
+            ok: false,
+            code: "pathsMissing".into(),
+            detail: String::new(),
+        };
+    }
+
+    let mut details = Vec::new();
+    match parse_port_map(&config.port_map, true) {
+        Ok(ports) => details.push(format!("port map: {} entries", ports.len())),
+        Err(error) => {
+            return RcVerify {
+                ok: false,
+                code: "portMapInvalid".into(),
+                detail: error.to_string(),
+            }
+        }
+    }
+
+    let script = format!(
+        "curl -s -u {} {}/api/serverinfo",
+        config.dashboard_auth,
+        dashboard_base(config)
+    );
+    let mut command = Command::new("ssh");
+    command.args([
+        "-i",
+        &expand_home(&config.ssh_key_path),
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=8",
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+        &format!("{}@{}", config.ssh_user, config.relay_host),
+        &script,
+    ]);
+    let (reachable, output) = run_capture(&mut command);
+    let version = parse_json(&output)
+        .and_then(|value| value["version"].as_str().map(str::to_string));
+
+    match version {
+        Some(version) => {
+            details.push(format!("frps {version}"));
+            verify_result(true, "dashboardOk", "dashboardFailed", details.join("\n"))
+        }
+        None => {
+            details.push(if output.is_empty() {
+                "no response".to_string()
+            } else {
+                output
+            });
+            RcVerify {
+                ok: false,
+                code: if reachable {
+                    "dashboardFailed".into()
+                } else {
+                    "relayFailed".into()
+                },
+                detail: details.join("\n"),
+            }
+        }
+    }
+}
+
+fn verify_rustdesk(config: &RcConfig) -> RcVerify {
+    use std::net::{TcpStream, ToSocketAddrs};
+
+    let domain = config.rustdesk_domain.trim();
+    if domain.is_empty() {
+        return RcVerify {
+            ok: false,
+            code: "pathsMissing".into(),
+            detail: String::new(),
+        };
+    }
+
+    let target = format!("{domain}:21116");
+    let address = match target.to_socket_addrs().ok().and_then(|mut items| items.next()) {
+        Some(address) => address,
+        None => {
+            return RcVerify {
+                ok: false,
+                code: "rustdeskFailed".into(),
+                detail: format!("cannot resolve {domain}"),
+            }
+        }
+    };
+
+    match TcpStream::connect_timeout(&address, std::time::Duration::from_secs(8)) {
+        Ok(_) => verify_result(
+            true,
+            "rustdeskOk",
+            "rustdeskFailed",
+            format!("{domain} → {address}"),
+        ),
+        Err(error) => RcVerify {
+            ok: false,
+            code: "rustdeskFailed".into(),
+            detail: format!("{address}: {error}"),
+        },
+    }
+}
+
+async fn verify_cloud(config: &RcConfig) -> RcVerify {
+    if config.instance_id.trim().is_empty() {
+        return RcVerify {
+            ok: false,
+            code: "pathsMissing".into(),
+            detail: String::new(),
+        };
+    }
+
+    let host = format!("ecs.{}.aliyuncs.com", config.region);
+    match aliyun_call(
+        &host,
+        "DescribeInstances",
+        "2014-05-26",
+        &[
+            ("RegionId".into(), config.region.clone()),
+            (
+                "InstanceIds".into(),
+                format!(r#"["{}"]"#, config.instance_id),
+            ),
+        ],
+    )
+    .await
+    {
+        Ok(data) => {
+            let instance = data["Instances"]["Instance"]
+                .as_array()
+                .and_then(|items| items.first());
+            match instance {
+                Some(instance) => verify_result(
+                    true,
+                    "cloudOk",
+                    "cloudFailed",
+                    format!(
+                        "{} · {} · {}",
+                        instance["InstanceId"].as_str().unwrap_or(""),
+                        instance["Status"].as_str().unwrap_or(""),
+                        instance["InstanceType"].as_str().unwrap_or("")
+                    ),
+                ),
+                None => RcVerify {
+                    ok: false,
+                    code: "cloudFailed".into(),
+                    detail: "instance not found".into(),
+                },
+            }
+        }
+        Err(error) => RcVerify {
+            ok: false,
+            code: "cloudFailed".into(),
+            detail: error.to_string(),
+        },
+    }
+}
+
+#[tauri::command]
+pub async fn rc_verify(
+    state: tauri::State<'_, AppState>,
+    section: String,
+) -> AppResult<RcVerify> {
+    let config = load_config(&state.db).await?;
+
+    let result = match section.as_str() {
+        "frpc" => {
+            tauri::async_runtime::spawn_blocking(move || verify_frpc(&config))
+                .await
+                .map_err(|error| AppError::Other(error.to_string()))?
+        }
+        "relay" => tauri::async_runtime::spawn_blocking(move || verify_relay(&config))
+            .await
+            .map_err(|error| AppError::Other(error.to_string()))?,
+        "dashboard" => {
+            tauri::async_runtime::spawn_blocking(move || verify_dashboard(&config))
+                .await
+                .map_err(|error| AppError::Other(error.to_string()))?
+        }
+        "rustdesk" => {
+            tauri::async_runtime::spawn_blocking(move || verify_rustdesk(&config))
+                .await
+                .map_err(|error| AppError::Other(error.to_string()))?
+        }
+        "cloud" => verify_cloud(&config).await,
+        other => {
+            return Err(AppError::Invalid(format!(
+                "unknown section for verification: {other}"
+            )))
+        }
+    };
+
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn rc_reveal_log(state: tauri::State<'_, AppState>) -> AppResult<()> {
+    let config = load_config(&state.db).await?;
+    if !std::path::Path::new(&config.log_path).exists() {
+        return Err(AppError::NotFound(config.log_path));
+    }
+    let mut command = Command::new("explorer");
+    command.arg(format!("/select,{}", config.log_path));
+    hide_console(&mut command);
+    command.spawn()?;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn rc_open_log(state: tauri::State<'_, AppState>) -> AppResult<()> {
     let config = load_config(&state.db).await?;
     if !std::path::Path::new(&config.log_path).exists() {
         return Err(AppError::NotFound(config.log_path));
     }
-    let mut command = Command::new("cmd");
-    command.args(["/C", "start", "", &config.log_path]);
+    let mut command = Command::new("notepad.exe");
+    command.arg(&config.log_path);
     hide_console(&mut command);
     command.spawn()?;
     Ok(())
