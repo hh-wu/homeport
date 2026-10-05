@@ -13,11 +13,11 @@ use url::Url;
 use super::provider::{http_client, read_response_limited, request_error, MAX_API_RESPONSE_BYTES};
 use crate::error::{AppError, AppResult};
 
-pub const GITHUB_CLIENT_ID: Option<&str> = option_env!("SAGEPORT_GITHUB_CLIENT_ID");
-pub const GOOGLE_CLIENT_ID: Option<&str> = option_env!("SAGEPORT_GOOGLE_CLIENT_ID");
+pub const GITHUB_CLIENT_ID: Option<&str> = option_env!("Homeport_GITHUB_CLIENT_ID");
+pub const GOOGLE_CLIENT_ID: Option<&str> = option_env!("Homeport_GOOGLE_CLIENT_ID");
 
-pub const GOOGLE_CLIENT_SECRET: Option<&str> = option_env!("SAGEPORT_GOOGLE_CLIENT_SECRET");
-pub const MS_CLIENT_ID: Option<&str> = option_env!("SAGEPORT_MS_CLIENT_ID");
+pub const GOOGLE_CLIENT_SECRET: Option<&str> = option_env!("Homeport_GOOGLE_CLIENT_SECRET");
+pub const MS_CLIENT_ID: Option<&str> = option_env!("Homeport_MS_CLIENT_ID");
 
 const GITHUB_SCOPE: &str = "gist";
 const GOOGLE_SCOPE: &str = "https://www.googleapis.com/auth/drive.appdata openid email";
@@ -124,7 +124,7 @@ pub async fn github_device_flow(
     on_event: &tauri::ipc::Channel<OAuthEvent>,
     mut cancel: tokio::sync::oneshot::Receiver<()>,
 ) -> AppResult<OAuthOutcome> {
-    let client_id = require(GITHUB_CLIENT_ID, "GitHub", "SAGEPORT_GITHUB_CLIENT_ID")?;
+    let client_id = require(GITHUB_CLIENT_ID, "GitHub", "Homeport_GITHUB_CLIENT_ID")?;
 
     let init_form = [("client_id", client_id), ("scope", GITHUB_SCOPE)];
     let init = tokio::select! {
@@ -207,7 +207,7 @@ async fn github_login(token: &str) -> AppResult<String> {
     let resp = http_client()?
         .get("https://api.github.com/user")
         .header("Authorization", format!("Bearer {token}"))
-        .header("User-Agent", "sageport")
+        .header("User-Agent", "Homeport")
         .header("Accept", "application/vnd.github+json")
         .send()
         .await
@@ -251,11 +251,11 @@ pub async fn google_flow(
     on_event: &tauri::ipc::Channel<OAuthEvent>,
     cancel: tokio::sync::oneshot::Receiver<()>,
 ) -> AppResult<OAuthOutcome> {
-    let client_id = require(GOOGLE_CLIENT_ID, "Google", "SAGEPORT_GOOGLE_CLIENT_ID")?;
+    let client_id = require(GOOGLE_CLIENT_ID, "Google", "Homeport_GOOGLE_CLIENT_ID")?;
     let client_secret = require(
         GOOGLE_CLIENT_SECRET,
         "Google",
-        "SAGEPORT_GOOGLE_CLIENT_SECRET",
+        "Homeport_GOOGLE_CLIENT_SECRET",
     )?;
 
     let listener = bind_loopback().await?;
@@ -332,7 +332,7 @@ pub async fn microsoft_flow(
     on_event: &tauri::ipc::Channel<OAuthEvent>,
     cancel: tokio::sync::oneshot::Receiver<()>,
 ) -> AppResult<OAuthOutcome> {
-    let client_id = require(MS_CLIENT_ID, "Microsoft", "SAGEPORT_MS_CLIENT_ID")?;
+    let client_id = require(MS_CLIENT_ID, "Microsoft", "Homeport_MS_CLIENT_ID")?;
 
     let listener = bind_loopback().await?;
 
@@ -407,11 +407,11 @@ async fn microsoft_account(access_token: &str) -> AppResult<String> {
 }
 
 pub async fn refresh_google(tokens: &OAuthTokens) -> AppResult<OAuthTokens> {
-    let client_id = require(GOOGLE_CLIENT_ID, "Google", "SAGEPORT_GOOGLE_CLIENT_ID")?;
+    let client_id = require(GOOGLE_CLIENT_ID, "Google", "Homeport_GOOGLE_CLIENT_ID")?;
     let client_secret = require(
         GOOGLE_CLIENT_SECRET,
         "Google",
-        "SAGEPORT_GOOGLE_CLIENT_SECRET",
+        "Homeport_GOOGLE_CLIENT_SECRET",
     )?;
     let resp = post_form_json(
         GOOGLE_TOKEN_URL,
@@ -434,7 +434,7 @@ pub async fn refresh_google(tokens: &OAuthTokens) -> AppResult<OAuthTokens> {
 }
 
 pub async fn refresh_microsoft(tokens: &OAuthTokens) -> AppResult<OAuthTokens> {
-    let client_id = require(MS_CLIENT_ID, "Microsoft", "SAGEPORT_MS_CLIENT_ID")?;
+    let client_id = require(MS_CLIENT_ID, "Microsoft", "Homeport_MS_CLIENT_ID")?;
     let resp = post_form_json(
         MS_TOKEN_URL,
         &[
@@ -556,7 +556,7 @@ async fn run_loopback(
         respond(
             &mut stream,
             200,
-            "Sageport is connected — you can close this tab and return to the app.",
+            "Homeport is connected — you can close this tab and return to the app.",
         )
         .await;
         return Ok(code);
@@ -570,7 +570,7 @@ async fn respond(stream: &mut tokio::net::TcpStream, status: u16, message: &str)
         _ => "Not Found",
     };
     let body = format!(
-        "<!doctype html><meta charset=\"utf-8\"><title>Sageport</title>\
+        "<!doctype html><meta charset=\"utf-8\"><title>Homeport</title>\
          <body style=\"font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0\">\
          <p>{message}</p></body>"
     );

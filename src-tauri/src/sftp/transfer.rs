@@ -182,7 +182,7 @@ pub async fn transfer(
         last_emit: Arc::new(Mutex::new(Instant::now())),
     };
 
-    let staged_name = format!(".sageport-transfer-{}", uuid::Uuid::new_v4());
+    let staged_name = format!(".homeport-transfer-{}", uuid::Uuid::new_v4());
     let mut done = 0u64;
     let copy_result = tokio::select! {
         biased;
@@ -589,7 +589,7 @@ async fn commit_staged(
         };
     }
 
-    let backup_name = format!(".sageport-backup-{}", uuid::Uuid::new_v4());
+    let backup_name = format!(".homeport-backup-{}", uuid::Uuid::new_v4());
     let backup = dest_join(
         dest_dir.connection_id.as_deref(),
         &dest_dir.path,
@@ -920,7 +920,7 @@ async fn compressed_local_to_remote(
     let remote_archive = join_remote(dst_dir, &remote_archive_name());
     let stage = join_remote(
         dst_dir,
-        &format!(".sageport-transfer-{}", uuid::Uuid::new_v4()),
+        &format!(".homeport-transfer-{}", uuid::Uuid::new_v4()),
     );
     let res = async {
         if cancel.is_cancelled() {
@@ -1006,7 +1006,7 @@ async fn compressed_remote_to_local(
 
     let tmp = local_temp_archive();
     let dst = PathBuf::from(dst_dir);
-    let stage = dst.join(format!(".sageport-transfer-{}", uuid::Uuid::new_v4()));
+    let stage = dst.join(format!(".homeport-transfer-{}", uuid::Uuid::new_v4()));
     let res = async {
         if cancel.is_cancelled() {
             return Err(AppError::Cancelled);
@@ -1086,7 +1086,7 @@ async fn compressed_remote_to_remote(
     let dst_archive = join_remote(dst_dir, &remote_archive_name());
     let stage = join_remote(
         dst_dir,
-        &format!(".sageport-transfer-{}", uuid::Uuid::new_v4()),
+        &format!(".homeport-transfer-{}", uuid::Uuid::new_v4()),
     );
     let res = async {
         if cancel.is_cancelled() {
@@ -1186,7 +1186,7 @@ async fn commit_local_stage(
         fs::rename(source, target).await?;
         return Ok(());
     }
-    let backup = dest_dir.join(format!(".sageport-backup-{}", uuid::Uuid::new_v4()));
+    let backup = dest_dir.join(format!(".homeport-backup-{}", uuid::Uuid::new_v4()));
     let target_is_dir = fs::symlink_metadata(&target).await?.is_dir();
     fs::rename(&target, &backup).await?;
     if let Err(error) = fs::rename(&source, &target).await {
@@ -1227,7 +1227,7 @@ async fn commit_remote_stage(
     }
     let backup = join_remote(
         dest_dir,
-        &format!(".sageport-backup-{}", uuid::Uuid::new_v4()),
+        &format!(".homeport-backup-{}", uuid::Uuid::new_v4()),
     );
     let target_endpoint = Endpoint {
         connection_id: Some(connection_id.to_string()),
@@ -1370,7 +1370,7 @@ fn extract_local_archive(
 }
 
 fn local_temp_archive() -> PathBuf {
-    std::env::temp_dir().join(format!("sageport-{}.tar.gz", uuid::Uuid::new_v4()))
+    std::env::temp_dir().join(format!("homeport-{}.tar.gz", uuid::Uuid::new_v4()))
 }
 
 async fn set_private_local_permissions(path: &Path) -> AppResult<()> {
@@ -1385,9 +1385,9 @@ async fn set_private_local_permissions(path: &Path) -> AppResult<()> {
 }
 
 fn remote_temp_archive() -> String {
-    format!("/tmp/sageport-{}.tar.gz", uuid::Uuid::new_v4())
+    format!("/tmp/homeport-{}.tar.gz", uuid::Uuid::new_v4())
 }
 
 fn remote_archive_name() -> String {
-    format!(".sageport-{}.tar.gz", uuid::Uuid::new_v4())
+    format!(".homeport-{}.tar.gz", uuid::Uuid::new_v4())
 }

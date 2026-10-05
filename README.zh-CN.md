@@ -1,10 +1,13 @@
 <div align="center">
 
-<img src="public/app-icon.png" alt="Sageport" width="96" height="96" />
+<img src="public/app-icon.png" alt="Homeport" width="96" height="96" />
 
-# Sageport
+# Homeport
 
 **你的所有服务器，一个工作台。**
+
+> 这是 [Sageport](https://github.com/joygqz/sageport)（作者 Quincy Zhang）的个人分支，
+> 在其上增加了远程访问控制台。变更说明见 [HOMEPORT.md](HOMEPORT.md)。
 
 终端、文件传输、状态监控、端口转发、定时自动化——装进一个免费开源的桌面应用，只靠标准 SSH 协议。
 

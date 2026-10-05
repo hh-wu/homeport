@@ -1,8 +1,8 @@
 {
-  "name": "sageport",
+  "name": "homeport",
   "private": true,
   "version": "2.8.1",
-  "author": "Quincy Zhang",
+  "author": "Quincy Zhang (fork maintained by hh-wu)",
   "license": "GPL-3.0-only",
   "type": "module",
   "packageManager": "pnpm@11.9.0",

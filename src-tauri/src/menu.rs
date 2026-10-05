@@ -6,9 +6,9 @@ const QUIT_ID: &str = "app-quit";
 
 pub fn install(app: &AppHandle) -> tauri::Result<()> {
     let (hide_label, quit_label) = if crate::tray::prefers_zh(app) {
-        ("关闭窗口", "退出 Sageport")
+        ("关闭窗口", "退出 Homeport")
     } else {
-        ("Close window", "Quit Sageport")
+        ("Close window", "Quit Homeport")
     };
 
     let package = app.package_info();

@@ -66,10 +66,10 @@ pub fn prefers_zh(app: &AppHandle) -> bool {
 
 fn initial_data(app: &AppHandle) -> TrayMenuData {
     let (open, quit, section, forwards_section) = if prefers_zh(app) {
-        ("打开 Sageport", "退出", "定时任务", "端口转发")
+        ("打开 Homeport", "退出", "定时任务", "端口转发")
     } else {
         (
-            "Open Sageport",
+            "Open Homeport",
             "Quit",
             "Scheduled tasks",
             "Port forwarding",
@@ -183,7 +183,7 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
 
     let builder = TrayIconBuilder::with_id("main")
         .icon(Image::from_bytes(TRAY_ICON)?)
-        .tooltip("Sageport")
+        .tooltip("Homeport")
         .menu(&menu)
         .on_menu_event(|app, event| on_menu_event(app, event.id.as_ref()));
 

@@ -21,7 +21,7 @@ import {
   type TreeSelectRow,
 } from "./tree-select-model";
 
-const EMPTY_VALUE = "__sageport_empty_tree_select_value__";
+const EMPTY_VALUE = "__Homeport_empty_tree_select_value__";
 
 function encodeValue(value: string) {
   return value === "" ? EMPTY_VALUE : value;

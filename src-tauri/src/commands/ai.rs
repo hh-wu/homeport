@@ -244,7 +244,7 @@ fn validate_messages(
         }
         if message.role == ai::Role::System {
             return Err(AppError::Invalid(
-                "system messages are managed by Sageport".into(),
+                "system messages are managed by Homeport".into(),
             ));
         }
         if message.role != ai::Role::Assistant && !message.tool_calls.is_empty() {

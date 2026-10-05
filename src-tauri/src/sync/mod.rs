@@ -1340,7 +1340,7 @@ mod tests {
 
     #[test]
     fn encrypted_file_write_replaces_atomically_and_uses_private_permissions() {
-        let dir = std::env::temp_dir().join(format!("sageport-sync-test-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("homeport-sync-test-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&dir).unwrap();
         let path = dir.join("vault.json");
         fs::write(&path, b"old partial data").unwrap();

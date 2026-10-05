@@ -1,11 +1,11 @@
 name: Bug report
-description: Report a defect in Sageport
+description: Report a defect in Homeport
 labels: [bug]
 body:
   - type: input
     id: version
     attributes:
-      label: Sageport version
+      label: Homeport version
       placeholder: 0.4.3
     validations:
       required: true

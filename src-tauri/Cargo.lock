@@ -2565,6 +2565,59 @@ dependencies = [
 ]
 
 [[package]]
+name = "homeport"
+version = "2.8.1"
+dependencies = [
+ "aes-gcm 0.11.1",
+ "anyhow",
+ "argon2",
+ "async-trait",
+ "base64 0.23.1",
+ "block2",
+ "chrono",
+ "dunce",
+ "flate2",
+ "glob",
+ "hex",
+ "hmac 0.13.0",
+ "libc",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "parking_lot",
+ "png 0.18.1",
+ "portable-pty",
+ "quick-xml 0.42.0",
+ "rand 0.10.2",
+ "reqwest",
+ "russh",
+ "russh-sftp",
+ "rusty-s3",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "sqlx",
+ "ssh-key 0.6.7",
+ "tar",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-process",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-updater",
+ "thiserror 2.0.20",
+ "tokio",
+ "url",
+ "uuid",
+ "windows-sys 0.61.2",
+ "zeroize",
+]
+
+[[package]]
 name = "html5ever"
 version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5128,59 +5181,6 @@ name = "ryu"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
-
-[[package]]
-name = "sageport"
-version = "2.8.1"
-dependencies = [
- "aes-gcm 0.11.1",
- "anyhow",
- "argon2",
- "async-trait",
- "base64 0.23.1",
- "block2",
- "chrono",
- "dunce",
- "flate2",
- "glob",
- "hex",
- "hmac 0.13.0",
- "libc",
- "objc2",
- "objc2-app-kit",
- "objc2-foundation",
- "parking_lot",
- "png 0.18.1",
- "portable-pty",
- "quick-xml 0.42.0",
- "rand 0.10.2",
- "reqwest",
- "russh",
- "russh-sftp",
- "rusty-s3",
- "serde",
- "serde_json",
- "sha2 0.11.0",
- "sqlx",
- "ssh-key 0.6.7",
- "tar",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-process",
- "tauri-plugin-single-instance",
- "tauri-plugin-updater",
- "thiserror 2.0.20",
- "tokio",
- "url",
- "uuid",
- "windows-sys 0.61.2",
- "zeroize",
-]
 
 [[package]]
 name = "salsa20"

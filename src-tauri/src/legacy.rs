@@ -9,7 +9,7 @@ use zeroize::Zeroizing;
 
 use crate::error::{AppError, AppResult};
 
-const PREFIX: &str = "sageport:secret:v1:";
+const PREFIX: &str = "Homeport:secret:v1:";
 const KEY_CHECK_SETTING: &str = "security.master_key_check";
 const KEY_LEN: usize = 32;
 const NONCE_LEN: usize = 12;
@@ -159,7 +159,7 @@ mod tests {
 
     async fn sealed_database(dir: &Path, key: &[u8]) -> SqlitePool {
         std::fs::create_dir_all(dir).unwrap();
-        let pool = crate::db::init(&dir.join("sageport.db")).await.unwrap();
+        let pool = crate::db::init(&dir.join("homeport.db")).await.unwrap();
         let ts = crate::domain::now();
         sqlx::query(
             "INSERT INTO hosts
@@ -189,7 +189,7 @@ mod tests {
 
     #[tokio::test]
     async fn sealed_values_become_plaintext_and_the_key_file_is_removed() {
-        let dir = std::env::temp_dir().join(format!("sageport-legacy-{}", uuid::Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("homeport-legacy-{}", uuid::Uuid::new_v4()));
         let key = [0x11u8; KEY_LEN];
         let pool = sealed_database(&dir, &key).await;
         std::fs::write(dir.join(KEY_FILES[0]), key).unwrap();
@@ -223,7 +223,7 @@ mod tests {
     #[tokio::test]
     async fn missing_key_preserves_all_encrypted_values() {
         let dir =
-            std::env::temp_dir().join(format!("sageport-legacy-lost-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("homeport-legacy-lost-{}", uuid::Uuid::new_v4()));
         let pool = sealed_database(&dir, &[0x22u8; KEY_LEN]).await;
 
         let error = decrypt_sealed_values(&dir, &pool).await.unwrap_err();
@@ -255,7 +255,7 @@ mod tests {
     #[tokio::test]
     async fn unreadable_value_rolls_back_the_entire_migration() {
         let dir =
-            std::env::temp_dir().join(format!("sageport-legacy-corrupt-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("homeport-legacy-corrupt-{}", uuid::Uuid::new_v4()));
         let key = [0x33u8; KEY_LEN];
         let pool = sealed_database(&dir, &key).await;
         std::fs::write(dir.join(KEY_FILES[0]), key).unwrap();

@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest an improvement for Sageport
+description: Suggest an improvement for Homeport
 labels: [enhancement]
 body:
   - type: textarea

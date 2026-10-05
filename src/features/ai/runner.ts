@@ -97,7 +97,7 @@ function buildContext(
   const state = useTabsStore.getState();
   const current = findPane(state.tabs, terminalId);
   const lines = [
-    `App: Sageport v${__APP_VERSION__}, a desktop SSH client.`,
+    `App: Homeport v${__APP_VERSION__}, a desktop SSH client.`,
     `UI language: ${detectLocale()}.`,
     current
       ? `Current terminal (default target): ${JSON.stringify({

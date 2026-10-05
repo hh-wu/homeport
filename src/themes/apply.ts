@@ -11,10 +11,10 @@ import type {
   ThemePreference,
 } from "./types";
 
-const THEME_STORAGE_KEY = "sageport.theme";
-const BOOTSTRAP_BG_KEY = "sageport.theme.bg";
-const BOOTSTRAP_SCHEME_KEY = "sageport.theme.scheme";
-export const THEME_PREFERENCE_EVENT = "sageport:theme-preference";
+const THEME_STORAGE_KEY = "homeport.theme";
+const BOOTSTRAP_BG_KEY = "homeport.theme.bg";
+const BOOTSTRAP_SCHEME_KEY = "homeport.theme.scheme";
+export const THEME_PREFERENCE_EVENT = "Homeport:theme-preference";
 
 export function parseThemePreference(value: string | null): ThemePreference {
   if (!value) {

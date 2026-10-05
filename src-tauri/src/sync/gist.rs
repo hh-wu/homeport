@@ -14,9 +14,9 @@ use super::provider::{
 };
 
 const API: &str = "https://api.github.com";
-const FILENAME: &str = "sageport-vault.json";
-const DESCRIPTION: &str = "Sageport encrypted vault — managed by the app, do not edit by hand.";
-const USER_AGENT: &str = "sageport";
+const FILENAME: &str = "homeport-vault.json";
+const DESCRIPTION: &str = "Homeport encrypted vault — managed by the app, do not edit by hand.";
+const USER_AGENT: &str = "Homeport";
 const API_VERSION: &str = "2022-11-28";
 
 pub struct GistProvider {

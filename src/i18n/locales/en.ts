@@ -160,7 +160,7 @@ export const en = {
   },
 
   tray: {
-    open: "Open Sageport",
+    open: "Open Homeport",
     quit: "Quit",
     section: "Scheduled tasks",
     forwards: "Port forwarding",
@@ -357,7 +357,7 @@ export const en = {
     unsavedDescription:
       'Changes to "{name}" will be lost if you close it without saving.',
     unsavedWindowDescription:
-      "Changes to {count} open files will be lost if you close Sageport without saving.",
+      "Changes to {count} open files will be lost if you close Homeport without saving.",
     discard: "Don't save",
     discardAll: "Don't save",
     saveAll: "Save all",
@@ -1305,9 +1305,9 @@ export const en = {
     general: {
       startup: "Startup",
       autostart: {
-        label: "Launch Sageport at login",
+        label: "Launch Homeport at login",
         description:
-          "Start Sageport automatically after you sign in. Port forwards set to start on launch will start too.",
+          "Start Homeport automatically after you sign in. Port forwards set to start on launch will start too.",
         loading: "Checking startup settings",
         loadError: "Failed to check startup settings",
         saveError: "Failed to update startup settings",
@@ -1417,7 +1417,7 @@ export const en = {
         "Back up hosts, groups, identities, keys, snippets, tasks, port forwards, SFTP bookmarks, and settings to a storage of your choice. Everything is end-to-end encrypted with your passphrase before it leaves this device. Disconnect first to switch storage.",
       providerLabel: "Storage provider",
       corruptRemoteBackup:
-        "The backup may be corrupt or from an incompatible version of Sageport.",
+        "The backup may be corrupt or from an incompatible version of Homeport.",
       provider: {
         gistTagline: "A secret gist on your GitHub account",
         gdriveTagline: "A hidden app folder in your Google Drive",
@@ -1430,7 +1430,7 @@ export const en = {
         oauthUnavailable:
           "{name} sign-in isn't available because this build has no OAuth client ID.",
         oauthError: "Authorization failed",
-        deviceCodeHint: "Enter this code on GitHub to authorize Sageport.",
+        deviceCodeHint: "Enter this code on GitHub to authorize Homeport.",
         openPageButton: "Open GitHub",
         browserWaiting: "Waiting for you to finish authorizing in the browser…",
         authorizedAs: "Signed in as {account}",
@@ -1510,7 +1510,7 @@ export const en = {
         importButton: "Restore from file",
         exportDialogTitle: "Export encrypted backup",
         importDialogTitle: "Restore encrypted backup",
-        vaultFilterName: "Sageport backup",
+        vaultFilterName: "Homeport backup",
         exportedTitle: "Backup exported",
         exportFailed: "Export failed",
         importedTitle: "Backup restored",
@@ -1518,7 +1518,7 @@ export const en = {
         importWrongPassphrase:
           "This passphrase doesn't match the one used to encrypt this file. Check for typos and try again.",
         importInvalidFile:
-          "This isn't a valid Sageport backup file. Check that you selected the correct file.",
+          "This isn't a valid Homeport backup file. Check that you selected the correct file.",
         passphraseDialogTitle: "Enter backup passphrase",
         exportPassphraseConfirm: "Choose export location",
         importPassphraseConfirm: "Choose backup file",
@@ -1528,13 +1528,15 @@ export const en = {
       version: "Version",
       author: "Author",
       license: "License",
+      forkNote:
+        "Homeport is a fork of Sageport, maintained locally for personal use.",
       openLinkError: "Failed to open link",
       update: {
         title: "Software update",
-        idle: "Check whether a new version of Sageport is available.",
+        idle: "Check whether a new version of Homeport is available.",
         check: "Check for updates",
         checking: "Checking for updates…",
-        upToDate: "Sageport is up to date",
+        upToDate: "Homeport is up to date",
         available: "Version {version} is available",
         install: "Download and install",
         viewRelease: "View release page",
@@ -1543,11 +1545,11 @@ export const en = {
         downloadingVersion: "Downloading version {version}",
         downloadingProgress: "Downloading {percent}%",
         ready: "Version {version} is ready to install",
-        restartHint: "Restart Sageport to finish the update.",
+        restartHint: "Restart Homeport to finish the update.",
         restart: "Restart to update",
         checkError: "Failed to check for updates",
         installError: "Failed to install update",
-        restartError: "Failed to restart Sageport",
+        restartError: "Failed to restart Homeport",
       },
     },
   },

@@ -9,7 +9,7 @@ import { parseTaskSteps, useTasks } from "./api";
 import { taskNeedsRemote } from "./steps";
 import { selectRunningRunForTask, useTaskRunStore } from "./store";
 
-const STORAGE_KEY = "sageport.task-schedule-runs";
+const STORAGE_KEY = "Homeport.task-schedule-runs";
 const TICK_MS = 30 * 1000;
 
 export type SkipReason = "noHost";

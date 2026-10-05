@@ -94,6 +94,7 @@ describe("locale parity", () => {
       "SFTP",
       "SSH",
       "SOCKS",
+      "Homeport",
       "Sageport",
       "Synology",
       "URL",

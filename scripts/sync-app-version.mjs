@@ -84,23 +84,23 @@ export function updateCargoLockVersion(contents, currentVersion, newVersion) {
   const packageStarts = lines.flatMap((line, index) =>
     line.trim() === "[[package]]" ? [index] : [],
   );
-  let sageportPackage = -1;
+  let homeportPackage = -1;
 
   for (const [packageIndex, start] of packageStarts.entries()) {
     const end = packageStarts[packageIndex + 1] ?? lines.length;
     const nameLine = lines
       .slice(start + 1, end)
       .find((line) => /^name\s*=/.test(line));
-    if (nameLine !== 'name = "sageport"') continue;
-    if (sageportPackage !== -1) {
-      throw new Error("src-tauri/Cargo.lock: duplicate sageport package");
+    if (nameLine !== 'name = "homeport"') continue;
+    if (homeportPackage !== -1) {
+      throw new Error("src-tauri/Cargo.lock: duplicate homeport package");
     }
 
     const versionIndex = lines
       .slice(start + 1, end)
       .findIndex((line) => /^version\s*=/.test(line));
     if (versionIndex === -1) {
-      throw new Error("src-tauri/Cargo.lock: sageport version not found");
+      throw new Error("src-tauri/Cargo.lock: homeport version not found");
     }
 
     const absoluteVersionIndex = start + 1 + versionIndex;
@@ -108,7 +108,7 @@ export function updateCargoLockVersion(contents, currentVersion, newVersion) {
       /^(version\s*=\s*")([^"]+)(".*)$/,
     );
     if (!versionMatch) {
-      throw new Error("src-tauri/Cargo.lock: invalid sageport version");
+      throw new Error("src-tauri/Cargo.lock: invalid homeport version");
     }
     if (versionMatch[2] !== currentVersion) {
       throw versionMismatch(
@@ -118,13 +118,13 @@ export function updateCargoLockVersion(contents, currentVersion, newVersion) {
       );
     }
 
-    sageportPackage = start;
+    homeportPackage = start;
     lines[absoluteVersionIndex] =
       `${versionMatch[1]}${newVersion}${versionMatch[3]}`;
   }
 
-  if (sageportPackage === -1) {
-    throw new Error("src-tauri/Cargo.lock: sageport package not found");
+  if (homeportPackage === -1) {
+    throw new Error("src-tauri/Cargo.lock: homeport package not found");
   }
 
   return lines.join(newline);

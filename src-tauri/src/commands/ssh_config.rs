@@ -331,7 +331,7 @@ mod tests {
     }
 
     fn test_home(config: &str) -> PathBuf {
-        let home = std::env::temp_dir().join(format!("sageport-{}", crate::domain::new_id()));
+        let home = std::env::temp_dir().join(format!("homeport-{}", crate::domain::new_id()));
         let ssh = home.join(".ssh");
         std::fs::create_dir_all(&ssh).unwrap();
         std::fs::write(ssh.join("config"), config).unwrap();

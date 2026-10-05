@@ -5,7 +5,7 @@ use std::time::Duration;
 use tokio::sync::OnceCell;
 
 const CAPTURE_TIMEOUT: Duration = Duration::from_secs(5);
-const ENV_MARKER: &str = "__sageport_env__";
+const ENV_MARKER: &str = "__Homeport_env__";
 const SESSION_VARS: [&str; 4] = ["PWD", "OLDPWD", "SHLVL", "_"];
 
 static LOGIN_ENV: OnceCell<HashMap<String, String>> = OnceCell::const_new();

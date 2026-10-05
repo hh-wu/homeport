@@ -492,10 +492,10 @@
   }
 }
 
-.monaco-editor .sageport-find-match {
+.monaco-editor .homeport-find-match {
   background-color: var(--vscode-editor-findMatchHighlightBackground);
 }
 
-.monaco-editor .sageport-find-match-current {
+.monaco-editor .homeport-find-match-current {
   background-color: var(--vscode-editor-findMatchBackground);
 }

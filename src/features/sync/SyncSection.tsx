@@ -325,7 +325,7 @@ function FileBackupCard() {
   const doExport = async (passphrase: string) => {
     const path = await save({
       title: t("settings.sync.file.exportDialogTitle"),
-      defaultPath: "sageport-vault.json",
+      defaultPath: "homeport-vault.json",
       filters: [
         { name: t("settings.sync.file.vaultFilterName"), extensions: ["json"] },
       ],

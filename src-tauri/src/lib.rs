@@ -55,7 +55,7 @@ fn cleanup_orphaned_sessions(state: &AppState) {
 
 fn initialize_app(app: &mut tauri::App) -> AppResult<()> {
     let data_dir = paths::initialize(app.handle())?;
-    let db_path = data_dir.join("sageport.db");
+    let db_path = data_dir.join("homeport.db");
     let pool = tauri::async_runtime::block_on(db::init(&db_path))?;
     tauri::async_runtime::block_on(legacy::decrypt_sealed_values(&data_dir, &pool))?;
     tauri::async_runtime::block_on(repository::transfer_repo::mark_interrupted(&pool))?;
@@ -65,16 +65,16 @@ fn initialize_app(app: &mut tauri::App) -> AppResult<()> {
 }
 
 fn report_startup_failure(app: &mut tauri::App, error: AppError) {
-    eprintln!("Sageport startup failed: {error}");
+    eprintln!("Homeport startup failed: {error}");
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
     }
     let handle = app.handle().clone();
     app.dialog()
         .message(format!(
-            "Sageport 无法打开本地数据库，未对现有数据做任何修改。\n\n请确认数据目录可读写，且磁盘空间充足。\n\nSageport could not open its local database. No existing data was modified.\n\nCheck that the data directory is readable and writable and that the disk has free space.\n\n详细信息 / Details:\n{error}"
+            "Homeport 无法打开本地数据库，未对现有数据做任何修改。\n\n请确认数据目录可读写，且磁盘空间充足。\n\nHomeport could not open its local database. No existing data was modified.\n\nCheck that the data directory is readable and writable and that the disk has free space.\n\n详细信息 / Details:\n{error}"
         ))
-        .title("Sageport 启动失败 / Startup failed")
+        .title("Homeport 启动失败 / Startup failed")
         .kind(MessageDialogKind::Error)
         .show(move |_| handle.exit(1));
 }

@@ -284,7 +284,7 @@ mod tests {
             KeyAlgorithm::EcdsaP521,
             KeyAlgorithm::Rsa2048,
         ] {
-            let generated = generate(algo, None, "test@sageport").expect("generate");
+            let generated = generate(algo, None, "test@Homeport").expect("generate");
             assert!(generated
                 .private_key
                 .starts_with("-----BEGIN OPENSSH PRIVATE KEY-----"));
@@ -300,7 +300,7 @@ mod tests {
     #[test]
     fn encrypted_key_requires_correct_passphrase() {
         let generated =
-            generate(KeyAlgorithm::Ed25519, Some("hunter2"), "test@sageport").expect("generate");
+            generate(KeyAlgorithm::Ed25519, Some("hunter2"), "test@Homeport").expect("generate");
 
         let insight = inspect(&generated.private_key, Some("hunter2"))
             .expect("inspect with correct passphrase")
@@ -322,12 +322,12 @@ mod tests {
 
     #[test]
     fn read_file_derives_public_key_instead_of_trusting_sibling_file() {
-        let dir = std::env::temp_dir().join(format!("sageport-keytest-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("homeport-keytest-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let priv_path = dir.join("id_test");
         let pub_path = dir.join("id_test.pub");
 
-        let generated = generate(KeyAlgorithm::Ed25519, None, "test@sageport").unwrap();
+        let generated = generate(KeyAlgorithm::Ed25519, None, "test@Homeport").unwrap();
         std::fs::write(&priv_path, &generated.private_key).unwrap();
         std::fs::write(&pub_path, "ssh-ed25519 mismatched sibling").unwrap();
 
@@ -348,7 +348,7 @@ mod tests {
     #[test]
     fn read_file_rejects_non_private_key_content() {
         let path =
-            std::env::temp_dir().join(format!("sageport-invalid-keytest-{}", std::process::id()));
+            std::env::temp_dir().join(format!("homeport-invalid-keytest-{}", std::process::id()));
         std::fs::write(&path, "ssh-ed25519 not-a-private-key").unwrap();
 
         assert!(matches!(
@@ -362,7 +362,7 @@ mod tests {
     #[test]
     fn exported_private_key_has_expected_content() {
         let path =
-            std::env::temp_dir().join(format!("sageport-key-export-test-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("homeport-key-export-test-{}", uuid::Uuid::new_v4()));
         std::fs::write(&path, "old-private-key").unwrap();
 
         write_private_key_file(&path, "private-key\n").unwrap();
@@ -374,7 +374,7 @@ mod tests {
     #[test]
     fn exported_public_key_has_expected_content() {
         let path = std::env::temp_dir().join(format!(
-            "sageport-public-key-export-test-{}",
+            "homeport-public-key-export-test-{}",
             uuid::Uuid::new_v4()
         ));
 
@@ -393,7 +393,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         let path = std::env::temp_dir().join(format!(
-            "sageport-key-export-mode-test-{}",
+            "homeport-key-export-mode-test-{}",
             uuid::Uuid::new_v4()
         ));
 
@@ -407,7 +407,7 @@ mod tests {
     #[test]
     fn read_file_accepts_encrypted_openssh_key_before_passphrase_entry() {
         let path =
-            std::env::temp_dir().join(format!("sageport-encrypted-keytest-{}", std::process::id()));
+            std::env::temp_dir().join(format!("homeport-encrypted-keytest-{}", std::process::id()));
         let generated = generate(KeyAlgorithm::Ed25519, Some("secret"), "encrypted-file")
             .expect("generate encrypted key");
         std::fs::write(&path, &generated.private_key).unwrap();
