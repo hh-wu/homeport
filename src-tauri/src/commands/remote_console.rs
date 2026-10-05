@@ -14,6 +14,15 @@ use crate::state::AppState;
 
 static WATCHDOG: AtomicBool = AtomicBool::new(false);
 
+#[cfg(windows)]
+fn hide_console(command: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    command.creation_flags(0x0800_0000);
+}
+
+#[cfg(not(windows))]
+fn hide_console(_command: &mut Command) {}
+
 const KEY_FRPC_PATH: &str = "remote.frpcPath";
 const KEY_FRPC_CONFIG: &str = "remote.frpcConfigPath";
 const KEY_LOG_PATH: &str = "remote.logPath";
@@ -348,10 +357,12 @@ fn start_frpc(config: &RcConfig) -> AppResult<()> {
         .parent()
         .map(|path| path.to_path_buf())
         .unwrap_or_default();
-    Command::new(&config.frpc_path)
+    let mut command = Command::new(&config.frpc_path);
+    command
         .args(["-c", &config.frpc_config_path])
-        .current_dir(dir)
-        .spawn()?;
+        .current_dir(dir);
+    hide_console(&mut command);
+    command.spawn()?;
     Ok(())
 }
 
@@ -359,9 +370,10 @@ fn stop_frpc() -> AppResult<()> {
     if frpc_pids().is_empty() {
         return Ok(());
     }
-    let status = Command::new("taskkill")
-        .args(["/IM", "frpc.exe", "/F"])
-        .output()?;
+    let mut command = Command::new("taskkill");
+    command.args(["/IM", "frpc.exe", "/F"]);
+    hide_console(&mut command);
+    let status = command.output()?;
     if status.status.success() {
         Ok(())
     } else {
@@ -670,7 +682,57 @@ async fn cloud_snapshot(config: &RcConfig) -> RcCloud {
     snapshot
 }
 
-fn check_proxies_blocking(config: &RcConfig) -> AppResult<String> {
+fn dashboard_base(config: &RcConfig) -> String {
+    match config.dashboard_url.find("/api/") {
+        Some(index) => config.dashboard_url[..index].to_string(),
+        None => config.dashboard_url.trim_end_matches('/').to_string(),
+    }
+}
+
+const PROXY_TYPES: [&str; 8] = ["tcp", "udp", "http", "https", "tcpmux", "stcp", "sudp", "xtcp"];
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RcProxy {
+    name: String,
+    kind: String,
+    status: String,
+    online: bool,
+    cur_conns: i64,
+    today_traffic_in: i64,
+    today_traffic_out: i64,
+    last_start_time: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RcProxyType {
+    kind: String,
+    count: i64,
+}
+
+#[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RcServerState {
+    version: String,
+    bind_port: u16,
+    client_counts: i64,
+    cur_conns: i64,
+    total_traffic_in: i64,
+    total_traffic_out: i64,
+    proxy_types: Vec<RcProxyType>,
+    proxies: Vec<RcProxy>,
+    errors: Vec<String>,
+}
+
+fn number(value: &serde_json::Value) -> i64 {
+    value
+        .as_i64()
+        .or_else(|| value.as_str().and_then(|text| text.parse().ok()))
+        .unwrap_or(0)
+}
+
+fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
     if config.dashboard_url.is_empty() {
         return Err(AppError::Invalid("dashboard url is not configured".into()));
     }
@@ -679,52 +741,104 @@ fn check_proxies_blocking(config: &RcConfig) -> AppResult<String> {
             "dashboard credentials are not configured".into(),
         ));
     }
-    let remote = format!(
-        "curl -s -u {} {}",
-        config.dashboard_auth, config.dashboard_url
+
+    let base = dashboard_base(config);
+    let mut script = format!(
+        "curl -s -u {} {}/api/serverinfo",
+        config.dashboard_auth, base
     );
-    let output = Command::new("ssh")
-        .args([
-            "-i",
-            &expand_home(&config.ssh_key_path),
-            "-o",
-            "BatchMode=yes",
-            "-o",
-            "ConnectTimeout=8",
-            "-o",
-            "StrictHostKeyChecking=accept-new",
-            &format!("{}@{}", config.ssh_user, config.relay_host),
-            &remote,
-        ])
-        .output()?;
+    for kind in PROXY_TYPES {
+        script.push_str(&format!(
+            "; echo '@@@'; curl -s -u {} {}/api/proxy/{}",
+            config.dashboard_auth, base, kind
+        ));
+    }
+
+    let mut command = Command::new("ssh");
+    command.args([
+        "-i",
+        &expand_home(&config.ssh_key_path),
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=8",
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+        &format!("{}@{}", config.ssh_user, config.relay_host),
+        &script,
+    ]);
+    hide_console(&mut command);
+    let output = command.output()?;
     if !output.status.success() {
         return Err(AppError::Network("ssh failed".into()));
     }
+
     let text = String::from_utf8_lossy(&output.stdout).to_string();
-    let start = text
-        .find('{')
-        .ok_or_else(|| AppError::Other("dashboard response unreadable".into()))?;
-    let end = text
-        .rfind('}')
-        .ok_or_else(|| AppError::Other("dashboard response unreadable".into()))?;
-    let data: serde_json::Value = serde_json::from_str(&text[start..=end])?;
-    let proxies = data["proxies"].as_array().cloned().unwrap_or_default();
-    if proxies.is_empty() {
-        return Err(AppError::Other("no proxies registered".into()));
-    }
-    let labels: Vec<String> = proxies
-        .iter()
-        .map(|proxy| {
-            let name = proxy["name"].as_str().unwrap_or("?");
-            let status = proxy["status"].as_str().unwrap_or("?");
-            format!("{name}:{status}")
-        })
-        .collect();
-    if proxies.iter().all(|proxy| proxy["status"] == "online") {
-        Ok(labels.join(" / "))
+    let mut chunks = text.split("@@@");
+    let mut state = RcServerState::default();
+
+    if let Some(section) = chunks.next().and_then(parse_json) {
+        state.version = section["version"].as_str().unwrap_or("").into();
+        state.bind_port = number(&section["bindPort"]) as u16;
+        state.client_counts = number(&section["clientCounts"]);
+        state.cur_conns = number(&section["curConns"]);
+        state.total_traffic_in = number(&section["totalTrafficIn"]);
+        state.total_traffic_out = number(&section["totalTrafficOut"]);
+        if let Some(counts) = section["proxyTypeCount"].as_object() {
+            state.proxy_types = counts
+                .iter()
+                .map(|(kind, value)| RcProxyType {
+                    kind: kind.clone(),
+                    count: number(value),
+                })
+                .collect();
+            state.proxy_types.sort_by(|left, right| left.kind.cmp(&right.kind));
+        }
     } else {
-        Err(AppError::Other(labels.join(" / ")))
+        state.errors.push("server info unreadable".into());
     }
+
+    for kind in PROXY_TYPES {
+        let Some(section) = chunks.next().and_then(parse_json) else {
+            continue;
+        };
+        let Some(items) = section["proxies"].as_array() else {
+            continue;
+        };
+        for item in items {
+            let status = item["status"].as_str().unwrap_or("").to_string();
+            state.proxies.push(RcProxy {
+                name: item["name"].as_str().unwrap_or("").into(),
+                kind: kind.into(),
+                online: status == "online",
+                status,
+                cur_conns: number(&item["curConns"]),
+                today_traffic_in: number(&item["todayTrafficIn"]),
+                today_traffic_out: number(&item["todayTrafficOut"]),
+                last_start_time: item["lastStartTime"].as_str().unwrap_or("").into(),
+            });
+        }
+    }
+
+    if state.proxies.is_empty() && state.errors.is_empty() {
+        state.errors.push("no proxies registered".into());
+    }
+
+    Ok(state)
+}
+
+fn parse_json(chunk: &str) -> Option<serde_json::Value> {
+    let start = chunk.find('{')?;
+    let end = chunk.rfind('}')?;
+    serde_json::from_str(&chunk[start..=end]).ok()
+}
+
+#[tauri::command]
+pub async fn rc_server_state(state: tauri::State<'_, AppState>) -> AppResult<RcServerState> {
+    let config = load_config(&state.db).await?;
+    tauri::async_runtime::spawn_blocking(move || server_state_blocking(&config))
+        .await
+        .map_err(|error| AppError::Other(error.to_string()))?
 }
 
 #[tauri::command]
@@ -768,14 +882,6 @@ pub async fn rc_set_watchdog(enabled: bool) -> AppResult<bool> {
 }
 
 #[tauri::command]
-pub async fn rc_check_proxies(state: tauri::State<'_, AppState>) -> AppResult<String> {
-    let config = load_config(&state.db).await?;
-    tauri::async_runtime::spawn_blocking(move || check_proxies_blocking(&config))
-        .await
-        .map_err(|error| AppError::Other(error.to_string()))?
-}
-
-#[tauri::command]
 pub async fn rc_cloud(state: tauri::State<'_, AppState>) -> AppResult<RcCloud> {
     let config = load_config(&state.db).await?;
     Ok(cloud_snapshot(&config).await)
@@ -795,9 +901,10 @@ pub async fn rc_open_log(state: tauri::State<'_, AppState>) -> AppResult<()> {
     if !std::path::Path::new(&config.log_path).exists() {
         return Err(AppError::NotFound(config.log_path));
     }
-    Command::new("cmd")
-        .args(["/C", "start", "", &config.log_path])
-        .spawn()?;
+    let mut command = Command::new("cmd");
+    command.args(["/C", "start", "", &config.log_path]);
+    hide_console(&mut command);
+    command.spawn()?;
     Ok(())
 }
 
@@ -899,6 +1006,24 @@ mod tests {
         assert!(expanded.ends_with(r".ssh\id_ed25519"));
         assert!(!expanded.starts_with('~'));
         assert_eq!(expand_home(r"D:\keys\id"), r"D:\keys\id");
+    }
+
+    #[test]
+    fn derives_the_dashboard_base_from_the_proxy_endpoint() {
+        let mut config = RcConfig::default();
+        config.dashboard_url = "http://127.0.0.1:7500/api/proxy/stcp".into();
+        assert_eq!(dashboard_base(&config), "http://127.0.0.1:7500");
+
+        config.dashboard_url = "https://example.com:8443/dashboard".into();
+        assert_eq!(dashboard_base(&config), "https://example.com:8443/dashboard");
+    }
+
+    #[test]
+    fn parses_json_chunks_with_surrounding_noise() {
+        let parsed = parse_json("warning\n{\"proxies\":[]}\n").unwrap();
+        assert!(parsed["proxies"].as_array().is_some());
+        assert!(parse_json("no json here").is_none());
+        assert!(parse_json("").is_none());
     }
 
     #[tokio::test]

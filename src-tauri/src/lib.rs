@@ -298,7 +298,7 @@ pub fn run() {
             commands::remote_console::rc_start,
             commands::remote_console::rc_stop,
             commands::remote_console::rc_set_watchdog,
-            commands::remote_console::rc_check_proxies,
+            commands::remote_console::rc_server_state,
             commands::remote_console::rc_cloud,
             commands::remote_console::rc_log_tail,
             commands::remote_console::rc_open_log,

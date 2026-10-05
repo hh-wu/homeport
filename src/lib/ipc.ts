@@ -40,6 +40,7 @@ import type {
   RcCloud,
   RcConfig,
   RcRustDesk,
+  RcServerState,
   RcStatus,
   ForwardStatusEvent,
   SftpStatusEvent,
@@ -559,7 +560,7 @@ export const ipc = {
     stop: () => invoke<RcStatus>("rc_stop"),
     setWatchdog: (enabled: boolean) =>
       invoke<boolean>("rc_set_watchdog", { enabled }),
-    checkProxies: () => invoke<string>("rc_check_proxies"),
+    serverState: () => invoke<RcServerState>("rc_server_state"),
     cloud: () => invoke<RcCloud>("rc_cloud"),
     logTail: (lines: number) => invoke<string>("rc_log_tail", { lines }),
     openLog: () => invoke<void>("rc_open_log"),

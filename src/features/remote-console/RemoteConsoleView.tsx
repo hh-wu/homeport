@@ -6,6 +6,7 @@ import {
   Button,
   ConfirmDialog,
   SectionHeader,
+  SegmentedControl,
   Separator,
   Spinner,
   SwitchField,
@@ -18,12 +19,12 @@ import { cn } from "@/lib/utils";
 import { SideBarView } from "@/workbench/SideBarView";
 import {
   remoteConsoleKeys,
-  useRcCheckProxies,
   useRcCloud,
   useRcConfig,
   useRcLog,
   useRcRustDesk,
   useRcSaveConfig,
+  useRcServerState,
   useRcSetWatchdog,
   useRcStart,
   useRcStatus,
@@ -40,6 +41,21 @@ function formatRate(bps: number | null) {
 
 function formatGb(gb: number | null) {
   return gb === null ? "—" : `${gb.toFixed(3)} GB`;
+}
+
+function formatTraffic(bytesIn: number, bytesOut: number) {
+  return `${formatBytesValue(bytesIn)} / ${formatBytesValue(bytesOut)}`;
+}
+
+function formatBytesValue(bytes: number) {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${unit === 0 ? value : value.toFixed(1)} ${units[unit]}`;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -74,11 +90,12 @@ export function RemoteConsoleView() {
   const startFrpc = useRcStart();
   const stopFrpc = useRcStop();
   const setWatchdog = useRcSetWatchdog();
-  const checkProxies = useRcCheckProxies();
+  const serverQuery = useRcServerState();
   const loadCloud = useRcCloud();
   const configQuery = useRcConfig();
   const saveConfig = useRcSaveConfig();
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [tab, setTab] = useState<"setup" | "log">("setup");
 
   useEffect(() => {
     const unlisten = ipc.remoteConsole.onStatusChanged(() => {
@@ -210,33 +227,124 @@ export function RemoteConsoleView() {
 
         <section className="rounded-md border border-border-subtle bg-surface-raised p-3">
           <SectionHeader
-            title={t("remote.proxies")}
-            description={t("remote.proxiesHint")}
+            title={t("remote.serverTitle")}
             actions={
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                loading={checkProxies.isPending}
-                onClick={() => checkProxies.mutate()}
+                loading={serverQuery.isFetching}
+                onClick={() => void serverQuery.refetch()}
               >
-                {t("remote.check")}
+                {t("remote.refresh")}
               </Button>
             }
           />
-          {checkProxies.data !== undefined && (
-            <p className="mt-2 flex items-start gap-2 text-xs text-foreground">
-              <StatusDot ok />
-              <span className="break-all">{checkProxies.data}</span>
-            </p>
-          )}
-          {checkProxies.error && (
-            <p className="mt-2 flex items-start gap-2 text-xs text-[var(--status-danger)]">
-              <StatusDot ok={false} />
-              <span className="break-all">
-                {errorMessage(checkProxies.error)}
-              </span>
-            </p>
+          <SegmentedControl
+            className="mt-2"
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: "setup", label: t("remote.tabSetup") },
+              { value: "log", label: t("remote.tabLog") },
+            ]}
+          />
+          {tab === "setup" ? (
+            serverQuery.data ? (
+              <div className="mt-2 flex flex-col">
+                <Metric
+                  label={t("remote.serverVersion")}
+                  value={serverQuery.data.version || "—"}
+                />
+                <Metric
+                  label={t("remote.serverClients")}
+                  value={String(serverQuery.data.clientCounts)}
+                />
+                <Metric
+                  label={t("remote.serverTraffic")}
+                  value={formatTraffic(
+                    serverQuery.data.totalTrafficIn,
+                    serverQuery.data.totalTrafficOut,
+                  )}
+                />
+                <Separator className="my-1.5" />
+                {serverQuery.data.proxies.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("remote.proxyNone")}
+                  </p>
+                ) : (
+                  serverQuery.data.proxies.map((proxy) => (
+                    <div
+                      key={`${proxy.kind}-${proxy.name}`}
+                      className="flex items-center justify-between gap-2 py-0.5"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <StatusDot ok={proxy.online} />
+                        <span className="truncate text-xs font-medium text-foreground">
+                          {proxy.name}
+                        </span>
+                        <span className="shrink-0 text-[0.6875rem] text-muted-foreground">
+                          {proxy.kind}
+                        </span>
+                      </span>
+                      <span
+                        className={cn(
+                          "shrink-0 text-[0.6875rem]",
+                          proxy.online
+                            ? "text-[var(--status-success)]"
+                            : "text-[var(--status-danger)]",
+                        )}
+                      >
+                        {proxy.online
+                          ? t("remote.proxyOnline")
+                          : t("remote.proxyOffline")}
+                      </span>
+                    </div>
+                  ))
+                )}
+                {serverQuery.data.errors.length > 0 && (
+                  <ul className="mt-2 flex flex-col gap-1">
+                    {serverQuery.data.errors.map((item) => (
+                      <li
+                        key={item}
+                        className="text-xs text-[var(--status-danger)]"
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : serverQuery.error ? (
+              <p className="mt-2 text-xs text-[var(--status-danger)]">
+                {errorMessage(serverQuery.error)}
+              </p>
+            ) : (
+              <div className="flex justify-center py-4">
+                <Spinner />
+              </div>
+            )
+          ) : (
+            <div className="mt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  void ipc.remoteConsole
+                    .openLog()
+                    .catch((error) =>
+                      toast.error(t("remote.logFailed"), errorMessage(error)),
+                    )
+                }
+              >
+                <FileText />
+                {t("remote.openLog")}
+              </Button>
+              <pre className="mt-2 max-h-72 overflow-auto rounded-md bg-surface-sunken p-2 font-mono text-[0.6875rem] leading-relaxed text-muted-foreground">
+                {logQuery.data || t("remote.logEmpty")}
+              </pre>
+            </div>
           )}
         </section>
 
@@ -369,31 +477,6 @@ export function RemoteConsoleView() {
           </Button>
         </section>
 
-        <section className="rounded-md border border-border-subtle bg-surface-raised p-3">
-          <SectionHeader
-            title={t("remote.log")}
-            actions={
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  void ipc.remoteConsole
-                    .openLog()
-                    .catch((error) =>
-                      toast.error(t("remote.logFailed"), errorMessage(error)),
-                    )
-                }
-              >
-                <FileText />
-                {t("remote.openLog")}
-              </Button>
-            }
-          />
-          <pre className="mt-2 max-h-52 overflow-auto rounded-md bg-surface-sunken p-2 font-mono text-[0.6875rem] leading-relaxed text-muted-foreground">
-            {logQuery.data || t("remote.logEmpty")}
-          </pre>
-        </section>
         <section className="rounded-md border border-border-subtle bg-surface-raised p-3">
           <SectionHeader
             title={t("remote.cfgTitle")}
