@@ -302,6 +302,8 @@ pub fn run() {
             commands::remote_console::rc_cloud,
             commands::remote_console::rc_log_tail,
             commands::remote_console::rc_open_log,
+            commands::remote_console::rc_reveal_log,
+            commands::remote_console::rc_verify,
             commands::remote_console::rc_rustdesk_info,
         ])
         .build(tauri::generate_context!())

@@ -10,6 +10,7 @@ import {
   Cpu,
   Download,
   FileText,
+  FolderOpen,
   Globe,
   MapPin,
   Play,
@@ -472,21 +473,38 @@ export function RemoteConsoleView() {
             )
           ) : (
             <div className="mt-2.5">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  void ipc.remoteConsole
-                    .openLog()
-                    .catch((error) =>
-                      toast.error(t("remote.logFailed"), errorMessage(error)),
-                    )
-                }
-              >
-                <FileText />
-                {t("remote.openLog")}
-              </Button>
+              <div className="mt-2 flex flex-wrap gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    void ipc.remoteConsole
+                      .openLog()
+                      .catch((error) =>
+                        toast.error(t("remote.logFailed"), errorMessage(error)),
+                      )
+                  }
+                >
+                  <FileText />
+                  {t("remote.openLog")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    void ipc.remoteConsole
+                      .revealLog()
+                      .catch((error) =>
+                        toast.error(t("remote.logFailed"), errorMessage(error)),
+                      )
+                  }
+                >
+                  <FolderOpen />
+                  {t("remote.revealLog")}
+                </Button>
+              </div>
               <pre className="mt-2 max-h-72 overflow-auto rounded-lg bg-surface-sunken p-2 font-mono text-[0.6875rem] leading-relaxed text-muted-foreground">
                 {logQuery.data || t("remote.logEmpty")}
               </pre>
