@@ -84,6 +84,11 @@
 - **本机是访问方**（如本机连 server-4090）：端口来自本机访客配置的 `bindPort`
 - **本机是提供方**（如 server-4090 连本机）：端口写在对面机器的访客配置里，本机看不到，只能用 `remote.portMap` 手填
 
+> 两个设置项可以指向**同一个文件**。frp 客户端配置允许 `[[proxies]]` 与 `[[visitors]]` 并存，
+> 因此一个 frpc 进程就能同时「对外提供服务」和「反向访问别人」——本机当前就是这么部署的
+> （`frpcConfigPath` 与 `visitorConfigPath` 都是 `D:\Programs\frp\frpc.toml`）。
+> 此时面板从同一份文件里读两侧端口，且「停止 frpc」只影响这一个进程。
+
 解析访客配置时按 **`serverName`** 匹配，而不是 `[[visitors]]` 里自己的 `name`——frps 上报的是提供方的代理名
 （例如配置里 `name = "s4090-ssh"` 而 `serverName = "server-4090-ssh"`，必须用后者）。这一点有单元测试守着。
 
