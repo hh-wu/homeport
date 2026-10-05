@@ -121,6 +121,26 @@
   （代理行、瓷砖、行）与**没有子菜单的卡片**上，不给服务器/云资源卡片整体加菜单
 - **敏感值不进菜单**：面板认证口令不提供复制项，避免误复制外泄；RustDesk Key 保留（卡片上本就有整体复制按钮）
 
+### 全局默认菜单的处理
+
+WebView2 自带浏览器右键菜单（返回 / 刷新 / 另存为 / 打印 / 更多工具），在没有自定义菜单的区域
+（列表空白、设置页、表单）会直接冒出来，与桌面应用不符。
+
+`main.tsx` 里全局监听 `contextmenu` 并 `preventDefault()`，**但输入框/文本域例外**：
+
+```ts
+if (isEditableTarget(event.target)) return; // input / textarea / contenteditable 放行
+event.preventDefault();
+```
+
+- 放行编辑区是为了保留系统菜单自带的**剪切 / 复制 / 粘贴 / 全选**（受控输入框自己实现粘贴要绕过
+  React 的 value tracker，成本与风险都不低）
+- Radix 触发器自身也会 `preventDefault`，与全局处理不冲突；仓库内没有依赖默认菜单行为的处理器
+
+> 曾尝试给 `Input` / `Textarea` 加自带菜单，被仓库的打包预算检查拦下：
+> `scripts/check-bundle.mjs` 禁止懒加载特性块（Radix 菜单）泄漏进首屏，而这两个原语被
+> `components/ui/index.ts` 静态引入。因此改为「编辑区放行系统菜单」这一零体积方案。
+
 「连接远程桌面」走的是窄接口后端命令 `rc_open_rdp(port)`（只接受端口号，内部拼 `mstsc /v:127.0.0.1:<port>`），
 不暴露「执行任意命令」的能力。SSH 则只提供**复制命令**——SSH 需要用户名，而用户名不在任何本机配置里，
 直接启动会因为默认用户名不对而失败，不如复制出来让用户自己补。
