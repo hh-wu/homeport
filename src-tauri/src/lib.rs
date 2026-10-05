@@ -147,6 +147,7 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(update::run_periodic(handle));
             commands::sync::run_periodic(app.handle().clone());
+            commands::remote_console::spawn_watchdog();
 
             Ok(())
         })
@@ -285,6 +286,15 @@ pub fn run() {
             commands::ai::ai_session_get,
             commands::ai::ai_session_save,
             commands::ai::ai_session_delete,
+            commands::remote_console::rc_status,
+            commands::remote_console::rc_start,
+            commands::remote_console::rc_stop,
+            commands::remote_console::rc_set_watchdog,
+            commands::remote_console::rc_check_proxies,
+            commands::remote_console::rc_cloud,
+            commands::remote_console::rc_log_tail,
+            commands::remote_console::rc_open_log,
+            commands::remote_console::rc_rustdesk_info,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

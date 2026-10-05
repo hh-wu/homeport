@@ -19,6 +19,7 @@ const ACTIVITIES = [
   "tasks",
   "forwards",
   "monitor",
+  "remote",
 ] as const;
 
 export type Activity = (typeof ACTIVITIES)[number];

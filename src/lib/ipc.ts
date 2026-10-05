@@ -37,6 +37,9 @@ import type {
   ProxyProfile,
   ProxyProfileInput,
   ProxyState,
+  RcCloud,
+  RcRustDesk,
+  RcStatus,
   ForwardStatusEvent,
   SftpStatusEvent,
   SftpBookmark,
@@ -545,6 +548,20 @@ export const ipc = {
       handler: (forwardId: string) => void,
     ): Promise<UnlistenFn> =>
       listen<string>("tray://open-forward", (event) => handler(event.payload)),
+  },
+  remoteConsole: {
+    status: () => invoke<RcStatus>("rc_status"),
+    start: () => invoke<RcStatus>("rc_start"),
+    stop: () => invoke<RcStatus>("rc_stop"),
+    setWatchdog: (enabled: boolean) =>
+      invoke<boolean>("rc_set_watchdog", { enabled }),
+    checkProxies: () => invoke<string>("rc_check_proxies"),
+    cloud: () => invoke<RcCloud>("rc_cloud"),
+    logTail: (lines: number) => invoke<string>("rc_log_tail", { lines }),
+    openLog: () => invoke<void>("rc_open_log"),
+    rustdesk: () => invoke<RcRustDesk>("rc_rustdesk_info"),
+    onStatusChanged: (handler: () => void): Promise<UnlistenFn> =>
+      listen<unknown>("rc://status", () => handler()),
   },
   update: {
     status: () => invoke<UpdateStatus>("update_status"),

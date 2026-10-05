@@ -393,6 +393,36 @@ export interface TrayMenuData {
   forwards: TrayForwardItem[];
 }
 
+export interface RcStatus {
+  running: boolean;
+  pids: number[];
+  uptime: string | null;
+  lastLog: string;
+  watchdog: boolean;
+}
+
+export interface RcCloud {
+  instanceStatus: string;
+  instanceSpec: string;
+  publicIp: string;
+  zone: string;
+  outRate: number | null;
+  inRate: number | null;
+  outGb: number | null;
+  inGb: number | null;
+  estFee: number | null;
+  balance: string | null;
+  bill: string | null;
+  cycle: string;
+  errors: string[];
+}
+
+export interface RcRustDesk {
+  domain: string;
+  key: string;
+  vps: string;
+}
+
 export type AiProtocol = "openai" | "anthropic";
 
 export interface AiConfig {

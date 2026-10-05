@@ -12,6 +12,7 @@ pub mod keys;
 pub mod monitor;
 pub mod proxies;
 pub mod pty;
+pub mod remote_console;
 pub mod settings;
 pub mod sftp;
 pub mod snippets;

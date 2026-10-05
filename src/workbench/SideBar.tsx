@@ -28,6 +28,12 @@ const MonitorView = lazy(() =>
   })),
 );
 
+const RemoteConsoleView = lazy(() =>
+  import("@/features/remote-console/RemoteConsoleView").then((module) => ({
+    default: module.RemoteConsoleView,
+  })),
+);
+
 const SnippetsView = lazy(() =>
   import("@/features/snippets/SnippetsView").then((module) => ({
     default: module.SnippetsView,
@@ -62,6 +68,7 @@ export const SideBar = memo(function SideBar({ width }: { width: number }) {
           {activity === "tasks" && <TasksView />}
           {activity === "forwards" && <ForwardsView />}
           {activity === "monitor" && <MonitorView />}
+          {activity === "remote" && <RemoteConsoleView />}
         </Suspense>
       </ErrorBoundary>
     </aside>
