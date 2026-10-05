@@ -37,6 +37,14 @@
 
 所有子进程（`ssh`、`frpc`、`taskkill`）都以 `CREATE_NO_WINDOW` 启动，操作时不会闪出控制台窗口。
 
+界面风格参考 [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev) 的信息层级：
+卡片带**色块图标标题**与右上角动作、指标以**瓷砖**呈现（色块图标 + 大数值 + 单位）、状态用**胶囊徽章**。
+颜色全部取自 Sageport 主题令牌（`--success`/`--warning`/`--info`/`--danger`/`--primary`、`surface-raised`、`border-subtle` 等），
+不写死色值，因此在浅色/深色及其他主题下均能正确适配。
+
+> 附带修正：早期版本的状态圆点误用了并不存在的 `var(--status-success)` / `var(--status-danger)`，
+> 现改用仓库既有写法（`bg-success` / `bg-destructive`，见 `workbench/tab-styles.ts`），错误文字改用对比度更好的 `text-danger`。
+
 ## 配置
 
 **源码中不保留任何配置值**（除首次运行的默认值外）。全部 13 项设置存放在本地数据库的 `settings` 表，
