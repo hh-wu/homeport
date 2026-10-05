@@ -4,6 +4,7 @@ import {
   ChevronRight,
   Info,
   Keyboard,
+  MonitorSmartphone,
   Network,
   RefreshCw,
   Settings2,
@@ -46,6 +47,7 @@ import {
   TOOL_GROUPS,
 } from "@/features/ai/tools";
 import { SyncSection } from "@/features/sync/SyncSection";
+import { RemoteSection } from "./RemoteSection";
 import { ProxySettings } from "@/features/proxies/ProxySettings";
 import { AboutSection } from "./AboutSection";
 import { DraftInput } from "./DraftInput";
@@ -83,6 +85,11 @@ const NAV: {
     id: "sync",
     labelKey: "settings.nav.sync",
     icon: RefreshCw,
+  },
+  {
+    id: "remote",
+    labelKey: "settings.nav.remote",
+    icon: MonitorSmartphone,
   },
   {
     id: "about",
@@ -222,6 +229,7 @@ function SettingsPage({
             {section === "keybindings" && <KeybindingsSection />}
             {section === "ai" && <AiSection />}
             {section === "sync" && <SyncSection />}
+            {section === "remote" && <RemoteSection />}
             {section === "about" && <AboutSection />}
           </main>
         </ScrollArea>

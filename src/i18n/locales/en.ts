@@ -137,7 +137,9 @@ export const en = {
     logEmpty: "No log output yet",
     logFailed: "Could not read the frpc log",
     cfgTitle: "Configuration",
-    cfgDescription: "Saved to the local database",
+    cfgOpen: "Open settings",
+    cfgMovedHint:
+      "Connection details, relay, and cloud options live in the settings page",
     cfgFrpcPath: "frpc binary",
     cfgFrpcConfig: "frpc config file",
     cfgLogPath: "Log file",
@@ -1221,7 +1223,15 @@ export const en = {
       keybindings: "Shortcuts",
       ai: "AI",
       sync: "Sync",
+      remote: "Remote access",
       about: "About",
+    },
+    remote: {
+      frpc: "frpc",
+      relay: "Relay server",
+      dashboard: "frps dashboard",
+      rustdesk: "RustDesk",
+      cloud: "Alibaba Cloud",
     },
     json: {
       title: "JSON settings",

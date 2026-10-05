@@ -41,17 +41,15 @@ import { SideBarView } from "@/workbench/SideBarView";
 import {
   remoteConsoleKeys,
   useRcCloud,
-  useRcConfig,
   useRcLog,
   useRcRustDesk,
-  useRcSaveConfig,
   useRcServerState,
   useRcSetWatchdog,
   useRcStart,
   useRcStatus,
   useRcStop,
 } from "./api";
-import { ConfigForm } from "./ConfigForm";
+import { useOverlayStore } from "@/workbench/overlays";
 
 type Tone = "primary" | "info" | "success" | "warning" | "destructive";
 
@@ -183,12 +181,11 @@ export function RemoteConsoleView() {
   const logQuery = useRcLog();
   const rustdeskQuery = useRcRustDesk();
   const serverQuery = useRcServerState();
-  const configQuery = useRcConfig();
   const startFrpc = useRcStart();
   const stopFrpc = useRcStop();
   const setWatchdog = useRcSetWatchdog();
   const loadCloud = useRcCloud();
-  const saveConfig = useRcSaveConfig();
+  const openSettings = useOverlayStore((state) => state.openSettings);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [tab, setTab] = useState<"setup" | "log">("setup");
 
@@ -639,29 +636,20 @@ export function RemoteConsoleView() {
             icon={Settings2}
             tone="primary"
             title={t("remote.cfgTitle")}
+            actions={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => openSettings("remote")}
+              >
+                {t("remote.cfgOpen")}
+              </Button>
+            }
           />
           <p className="mt-1.5 text-[0.6875rem] text-muted-foreground">
-            {t("remote.cfgDescription")}
+            {t("remote.cfgMovedHint")}
           </p>
-          {configQuery.data ? (
-            <ConfigForm
-              config={configQuery.data}
-              saving={saveConfig.isPending}
-              onSave={(next) => {
-                saveConfig.mutate(next, {
-                  onSuccess: () => toast.success(t("remote.cfgSaved")),
-                  onError: (error) =>
-                    toast.error(t("remote.cfgFailed"), errorMessage(error)),
-                });
-              }}
-            />
-          ) : (
-            <p className="mt-2 text-[0.6875rem] text-muted-foreground">
-              {configQuery.error
-                ? errorMessage(configQuery.error)
-                : t("remote.cloudIdle")}
-            </p>
-          )}
         </Card>
       </div>
 

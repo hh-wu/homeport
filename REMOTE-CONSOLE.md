@@ -62,7 +62,9 @@
 行为：
 
 - 首次启动自动把默认值写入数据库（`remote_console::ensure_config`），之后一律以数据库为准
-- 面板底部「配置」区可直接编辑并保存，保存时校验（必填项、frpc 路径须为 `.exe`、面板认证须含 `:`、单价范围）
+- **配置界面在「设置 → 远程访问」**（`features/settings/RemoteSection.tsx`），按 frpc / 中转服务器 / frps 面板 / RustDesk / 阿里云分成 5 组；
+  字段**失焦即保存**（与设置页其它分区一致），保存时校验（必填项、frpc 路径须为 `.exe`、面板认证须含 `:`、单价范围）
+- 远程访问面板底部保留一个卡片，点「打开设置」可直接跳到该分区（`openSettings("remote")`）
 - 面板认证密码、RustDesk Key 等敏感值同样存放于该数据库——与 Sageport 自身对主机凭据的处理方式一致
 - 阿里云 AccessKey **不在**这些设置里，仍从环境变量或 `~\.aliyun\credentials.json` 读取
 
