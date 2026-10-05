@@ -143,7 +143,7 @@ export const zhCN: Dictionary = {
     cfgFrpcConfig: "frpc 配置文件",
     cfgVisitorConfig: "访客配置文件",
     cfgVisitorConfigHint:
-      "访问端口从该文件的 [[visitors]] 读取；端口映射的优先级更高。",
+      "访问端口从该文件的 [[visitors]] 读取，端口映射的优先级更高。",
     cfgLogPath: "日志文件",
     browse: "浏览",
     filterAll: "所有文件",
