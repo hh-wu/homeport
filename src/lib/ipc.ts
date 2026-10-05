@@ -563,6 +563,7 @@ export const ipc = {
       invoke<boolean>("rc_set_watchdog", { enabled }),
     verify: (section: string) => invoke<RcVerify>("rc_verify", { section }),
     revealLog: () => invoke<void>("rc_reveal_log"),
+    openRdp: (port: number) => invoke<void>("rc_open_rdp", { port }),
     serverState: () => invoke<RcServerState>("rc_server_state"),
     cloud: () => invoke<RcCloud>("rc_cloud"),
     logTail: (lines: number) => invoke<string>("rc_log_tail", { lines }),

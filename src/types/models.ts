@@ -436,6 +436,7 @@ export interface RcProxy {
   localPort: number | null;
   remotePort: number | null;
   accessPort: number | null;
+  accessLocal: boolean;
   stale: boolean;
 }
 

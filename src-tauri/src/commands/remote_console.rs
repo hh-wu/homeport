@@ -62,9 +62,7 @@ const KEYS: [&str; 15] = [
 const BSS_HOST: &str = "business.aliyuncs.com";
 
 const DEFAULT_PORT_MAP: &str = "home-rdp = 13389
-home-ssh = 10022
-server-4090-rdp = 23389
-server-4090-ssh = 20022";
+home-ssh = 10022";
 
 const DEFAULT_VISITOR_CONFIG: &str = r"C:\Users\user\Documents\deepseek-harness\default-workspace\远程访问配置\frpc-visitor-4090-独立版.toml";
 
@@ -843,6 +841,7 @@ pub struct RcProxy {
     local_port: Option<u16>,
     remote_port: Option<u16>,
     access_port: Option<u16>,
+    access_local: bool,
     stale: bool,
 }
 
@@ -958,6 +957,13 @@ fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
             let status = item["status"].as_str().unwrap_or("").to_string();
             let name = item["name"].as_str().unwrap_or("").to_string();
             let local = local_ports.get(&name);
+            let access = match access_ports.get(&name) {
+                Some(port) => (Some(*port), visitor_ports.contains_key(&name)),
+                None => match visitor_ports.get(&name) {
+                    Some(port) => (Some(*port), true),
+                    None => (None, false),
+                },
+            };
             state.proxies.push(RcProxy {
                 stale: item["conf"].is_null(),
                 local_ip: local
@@ -973,10 +979,8 @@ fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
                     .as_i64()
                     .filter(|port| (1..=65535).contains(port))
                     .map(|port| port as u16),
-                access_port: access_ports
-                    .get(&name)
-                    .or_else(|| visitor_ports.get(&name))
-                    .copied(),
+                access_port: access.0,
+                access_local: access.1,
                 name,
                 kind: kind.into(),
                 online: status == "online",
@@ -1372,6 +1376,18 @@ pub async fn rc_verify(
     };
 
     Ok(result)
+}
+
+#[tauri::command]
+pub async fn rc_open_rdp(port: u16) -> AppResult<()> {
+    if port == 0 {
+        return Err(AppError::Invalid("port is required".into()));
+    }
+    let mut command = Command::new("mstsc");
+    command.arg(format!("/v:127.0.0.1:{port}"));
+    hide_console(&mut command);
+    command.spawn()?;
+    Ok(())
 }
 
 #[tauri::command]

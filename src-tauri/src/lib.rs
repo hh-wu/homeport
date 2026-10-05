@@ -303,6 +303,7 @@ pub fn run() {
             commands::remote_console::rc_log_tail,
             commands::remote_console::rc_open_log,
             commands::remote_console::rc_reveal_log,
+            commands::remote_console::rc_open_rdp,
             commands::remote_console::rc_verify,
             commands::remote_console::rc_rustdesk_info,
         ])
