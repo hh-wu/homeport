@@ -843,6 +843,7 @@ pub struct RcProxy {
     local_port: Option<u16>,
     remote_port: Option<u16>,
     access_port: Option<u16>,
+    stale: bool,
 }
 
 #[derive(Serialize)]
@@ -958,6 +959,7 @@ fn server_state_blocking(config: &RcConfig) -> AppResult<RcServerState> {
             let name = item["name"].as_str().unwrap_or("").to_string();
             let local = local_ports.get(&name);
             state.proxies.push(RcProxy {
+                stale: item["conf"].is_null(),
                 local_ip: local
                     .map(|(ip, _)| ip.clone())
                     .or_else(|| {

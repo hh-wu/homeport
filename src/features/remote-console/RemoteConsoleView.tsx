@@ -414,11 +414,16 @@ export function RemoteConsoleView() {
                     </p>
                   ) : (
                     server.proxies.map((proxy) => {
-                      const mapping = portMapping(proxy, t);
+                      const mapping = proxy.stale
+                        ? null
+                        : portMapping(proxy, t);
                       return (
                         <div
                           key={`${proxy.kind}-${proxy.name}`}
-                          className="flex flex-col gap-0.5 rounded-md px-1.5 py-1 hover:bg-list-hover"
+                          className={cn(
+                            "flex flex-col gap-0.5 rounded-md px-1.5 py-1 hover:bg-list-hover",
+                            proxy.stale && "opacity-55",
+                          )}
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="flex min-w-0 items-center gap-2">
@@ -433,12 +438,18 @@ export function RemoteConsoleView() {
                               </span>
                               <Badge
                                 variant={
-                                  proxy.online ? "success" : "destructive"
+                                  proxy.stale
+                                    ? "outline"
+                                    : proxy.online
+                                      ? "success"
+                                      : "destructive"
                                 }
                               >
-                                {proxy.online
-                                  ? t("remote.online")
-                                  : t("remote.offline")}
+                                {proxy.stale
+                                  ? t("remote.stale")
+                                  : proxy.online
+                                    ? t("remote.online")
+                                    : t("remote.offline")}
                               </Badge>
                             </span>
                           </div>
