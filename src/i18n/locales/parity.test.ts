@@ -61,6 +61,7 @@ describe("locale parity", () => {
       "Drive",
       "Ed25519",
       "Enter",
+      "GB",
       "Git",
       "GitHub",
       "Google",

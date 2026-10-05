@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ipc } from "@/lib/ipc";
+import type { RcConfig } from "@/types/models";
 
 export const remoteConsoleKeys = {
   status: ["remoteConsole", "status"] as const,
   log: ["remoteConsole", "log"] as const,
   rustdesk: ["remoteConsole", "rustdesk"] as const,
+  config: ["remoteConsole", "config"] as const,
 };
 
 export function useRcStatus() {
@@ -71,4 +73,25 @@ export function useRcCheckProxies() {
 
 export function useRcCloud() {
   return useMutation({ mutationFn: ipc.remoteConsole.cloud });
+}
+
+export function useRcConfig() {
+  return useQuery({
+    queryKey: remoteConsoleKeys.config,
+    queryFn: ipc.remoteConsole.config,
+    staleTime: Infinity,
+  });
+}
+
+export function useRcSaveConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (config: RcConfig) => ipc.remoteConsole.saveConfig(config),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(remoteConsoleKeys.config, saved);
+      void queryClient.invalidateQueries({
+        queryKey: remoteConsoleKeys.status,
+      });
+    },
+  });
 }

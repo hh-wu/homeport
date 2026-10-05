@@ -145,12 +145,18 @@ fn on_menu_event(app: &AppHandle, id: &str) {
         "tray-show" => show_main_window(app),
         "tray-quit" => app.exit(0),
         "tray-frpc-start" => {
-            let _ = crate::commands::remote_console::start_frpc();
-            let _ = app.emit("rc://status", ());
+            let handle = app.clone();
+            tauri::async_runtime::spawn(async move {
+                crate::commands::remote_console::start_from_tray(&handle).await;
+                let _ = handle.emit("rc://status", ());
+            });
         }
         "tray-frpc-stop" => {
-            let _ = crate::commands::remote_console::stop_frpc();
-            let _ = app.emit("rc://status", ());
+            let handle = app.clone();
+            tauri::async_runtime::spawn(async move {
+                crate::commands::remote_console::stop_from_tray().await;
+                let _ = handle.emit("rc://status", ());
+            });
         }
         _ => {
             if let Some(task_id) = id.strip_prefix(TASK_ID_PREFIX) {
