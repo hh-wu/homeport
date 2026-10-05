@@ -57,6 +57,7 @@ describe("locale parity", () => {
       "CONNECT",
       "CPU",
       "D",
+      "Cloud",
       "Docker",
       "Drive",
       "Ed25519",
