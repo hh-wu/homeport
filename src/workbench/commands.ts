@@ -10,6 +10,7 @@ import { IS_MACOS } from "@/lib/platform";
 import { THEMES } from "@/themes";
 import { useTheme } from "@/themes/useTheme";
 import { useLayoutStore, type Activity } from "./layout";
+import { toggleAssistantPanel, toggleFilesPanel } from "./popout";
 import {
   keybindingDisplayKeys,
   type KeybindingId,
@@ -175,14 +176,14 @@ export function useCommands(): WorkbenchCommand[] {
         categoryKey: "commands.category.view",
         label: t("commands.view.togglePanel"),
         shortcut: commandShortcut("view.togglePanel", keybindingOverrides),
-        run: () => layout().togglePanel(),
+        run: () => toggleFilesPanel(),
       },
       {
         id: "view.toggleAssistant",
         categoryKey: "commands.category.view",
         label: t("commands.view.toggleAssistant"),
         shortcut: commandShortcut("view.toggleAssistant", keybindingOverrides),
-        run: () => layout().toggleAux(),
+        run: () => toggleAssistantPanel(),
       },
       ...(
         [

@@ -23,7 +23,6 @@ import {
   usePasswordPromptStore,
 } from "@/features/terminal/password-prompt";
 import { ActivityBar } from "./ActivityBar";
-import { DetachedPlaceholder } from "./DetachedPlaceholder";
 import { EditorArea } from "./EditorArea";
 import { FONT_SYNC_KEY, useFontStore } from "./font";
 import { serializeKeybindingOverrides } from "./keybinding-registry";
@@ -36,7 +35,7 @@ import {
   useLayoutStore,
 } from "./layout";
 import { useOverlayStore } from "./overlays";
-import { usePopoutStore, usePopoutSync } from "./popout";
+import { usePopoutSync } from "./popout";
 import { SideBar } from "./SideBar";
 import { StatusBar } from "./StatusBar";
 import { TitleBar } from "./TitleBar";
@@ -265,8 +264,6 @@ export function Workbench() {
   const shownOverlay = useDialogSnapshot(Boolean(overlay), overlay);
   const hostKeyMounted = useKeepMounted(hasHostKeyPrompt);
   const passwordMounted = useKeepMounted(hasPasswordPrompt);
-  const filesDetached = usePopoutStore((s) => s.detached.files);
-  const assistantDetached = usePopoutStore((s) => s.detached.assistant);
   usePopoutSync();
 
   return (
@@ -324,11 +321,7 @@ export function Workbench() {
               />
               <ErrorBoundary>
                 <Suspense fallback={<FeatureLoading height={panelHeight} />}>
-                  {filesDetached ? (
-                    <DetachedPlaceholder panel="files" />
-                  ) : (
-                    <SftpPanel height={panelHeight} />
-                  )}
+                  <SftpPanel height={panelHeight} />
                 </Suspense>
               </ErrorBoundary>
             </>
@@ -349,11 +342,7 @@ export function Workbench() {
             />
             <ErrorBoundary>
               <Suspense fallback={<FeatureLoading width={auxWidth} />}>
-                {assistantDetached ? (
-                  <DetachedPlaceholder panel="assistant" />
-                ) : (
-                  <AssistantPanel width={auxWidth} />
-                )}
+                <AssistantPanel width={auxWidth} />
               </Suspense>
             </ErrorBoundary>
           </>

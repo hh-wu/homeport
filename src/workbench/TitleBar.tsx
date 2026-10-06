@@ -15,6 +15,7 @@ import { useLayoutStore } from "./layout";
 import { keybindingDisplayKeys } from "./keybinding-registry";
 import { useKeybindingStore } from "./keybinding-store";
 import { useOverlayStore } from "./overlays";
+import { toggleAssistantPanel, toggleFilesPanel } from "./popout";
 import { WindowControls } from "./WindowControls";
 
 export const TitleBar = memo(function TitleBar() {
@@ -24,8 +25,6 @@ export const TitleBar = memo(function TitleBar() {
   const toggleSidebar = useLayoutStore((s) => s.toggleSidebar);
   const panelVisible = useLayoutStore((s) => s.panelVisible);
   const auxVisible = useLayoutStore((s) => s.auxVisible);
-  const togglePanel = useLayoutStore((s) => s.togglePanel);
-  const toggleAux = useLayoutStore((s) => s.toggleAux);
   const keybindingOverrides = useKeybindingStore((state) => state.overrides);
   const quickConnectKeys = keybindingDisplayKeys(
     "palette.quick",
@@ -95,7 +94,7 @@ export const TitleBar = memo(function TitleBar() {
           <LayoutToggle
             label={t("titleBar.togglePanel")}
             active={panelVisible}
-            onClick={togglePanel}
+            onClick={toggleFilesPanel}
           >
             {panelVisible ? (
               <PanelBottomFilled className="size-4" />
@@ -106,7 +105,7 @@ export const TitleBar = memo(function TitleBar() {
           <LayoutToggle
             label={t("titleBar.toggleAssistant")}
             active={auxVisible}
-            onClick={toggleAux}
+            onClick={toggleAssistantPanel}
           >
             {auxVisible ? (
               <PanelRightFilled className="size-4" />

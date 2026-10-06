@@ -6,6 +6,7 @@ import { getSession } from "@/features/terminal/sessions";
 import { IS_MACOS } from "@/lib/platform";
 import { useLayoutStore } from "./layout";
 import { useOverlayStore } from "./overlays";
+import { toggleAssistantPanel, toggleFilesPanel } from "./popout";
 import { useTabsStore } from "./tabs";
 import { copyActivePane, pasteActivePane } from "./commands";
 import { clipboardShortcutShouldDefer } from "./shortcuts";
@@ -35,9 +36,9 @@ function runKeybinding(id: KeybindingId): void {
   } else if (id === "terminal.newLocal") {
     tabs.openLocalTerminal();
   } else if (id === "view.togglePanel") {
-    layout.togglePanel();
+    toggleFilesPanel();
   } else if (id === "view.toggleAssistant") {
-    layout.toggleAux();
+    toggleAssistantPanel();
   } else if (id === "tab.close") {
     if (overlays.overlay) {
       overlays.close();

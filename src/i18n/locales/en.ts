@@ -962,7 +962,6 @@ export const en = {
 
   popout: {
     open: "Open in a separate window",
-    detached: "This panel is open in a separate window",
     dockBack: "Dock back",
     openFailed: "Could not open the window",
   },

@@ -31,8 +31,8 @@ import { useSftpStore } from "@/features/sftp/store";
 import { useUpdateStatus } from "@/features/updates/api";
 import { useProxyState, useSetActiveProxy } from "@/features/proxies/api";
 import { errorMessage, toast } from "@/lib/toast";
-import { useLayoutStore } from "./layout";
 import { useOverlayStore } from "./overlays";
+import { toggleFilesPanel } from "./popout";
 import { STATUS_DOT_CLASS } from "./tab-styles";
 import { findPane, paneTab, targetPaneId, useTabsStore } from "./tabs";
 
@@ -254,7 +254,6 @@ function BroadcastItem() {
 
 function TransfersItem() {
   const { t } = useI18n();
-  const togglePanel = useLayoutStore((s) => s.togglePanel);
   const activeCount = useSftpStore(
     (s) =>
       Object.values(s.transfers).filter((x) => x.status === "active").length,
@@ -262,7 +261,7 @@ function TransfersItem() {
   if (activeCount === 0) return null;
 
   return (
-    <StatusBarItem onClick={togglePanel}>
+    <StatusBarItem onClick={toggleFilesPanel}>
       <FolderSync className="size-3 animate-pulse" />
       <span>{t("statusBar.transfers", { count: activeCount })}</span>
     </StatusBarItem>

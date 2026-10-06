@@ -7,6 +7,7 @@ import { detectLocale } from "@/i18n/config";
 import { translate } from "@/i18n/translate";
 import { ipc } from "@/lib/ipc";
 import { errorMessage, toast } from "@/lib/toast";
+import { useLayoutStore } from "./layout";
 
 export type PopoutPanel = "assistant" | "files";
 
@@ -32,10 +33,39 @@ export const usePopoutStore = create<PopoutState>()((set) => ({
     set((state) => ({ detached: { ...state.detached, [panel]: detached } })),
 }));
 
+function hidePanelArea(panel: PopoutPanel): void {
+  const layout = useLayoutStore.getState();
+  if (panel === "files") layout.setPanelVisible(false);
+  else if (layout.auxVisible) layout.toggleAux();
+}
+
+function revealPanelArea(panel: PopoutPanel): void {
+  const layout = useLayoutStore.getState();
+  if (panel === "files") layout.setPanelVisible(true);
+  else if (!layout.auxVisible) layout.toggleAux();
+}
+
+export function toggleFilesPanel(): void {
+  if (usePopoutStore.getState().detached.files) {
+    void dockPanel("files");
+    return;
+  }
+  useLayoutStore.getState().togglePanel();
+}
+
+export function toggleAssistantPanel(): void {
+  if (usePopoutStore.getState().detached.assistant) {
+    void dockPanel("assistant");
+    return;
+  }
+  useLayoutStore.getState().toggleAux();
+}
+
 export async function popoutPanel(panel: PopoutPanel): Promise<void> {
   try {
     await ipc.window.popout(panel);
     usePopoutStore.getState().setDetached(panel, true);
+    hidePanelArea(panel);
   } catch (error) {
     toast.error(
       translate(detectLocale(), "popout.openFailed"),
@@ -51,6 +81,7 @@ export async function dockPanel(panel: PopoutPanel): Promise<void> {
     void 0;
   }
   usePopoutStore.getState().setDetached(panel, false);
+  revealPanelArea(panel);
 }
 
 async function syncDetachedFromBackend(): Promise<void> {
@@ -71,6 +102,7 @@ export function usePopoutSync(): void {
     const pending = listen<string>("popout://closed", (event) => {
       if (isPopoutPanel(event.payload)) {
         usePopoutStore.getState().setDetached(event.payload, false);
+        revealPanelArea(event.payload);
       }
     });
     const onFocus = () => void syncDetachedFromBackend();
