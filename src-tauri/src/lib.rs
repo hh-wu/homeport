@@ -109,6 +109,9 @@ pub fn run() {
             let _ = (window, event);
         })
         .on_page_load(|webview, payload| {
+            if webview.label() != "main" {
+                return;
+            }
             if payload.event() == PageLoadEvent::Started {
                 if let Some(state) = webview.try_state::<AppState>() {
                     cleanup_orphaned_sessions(&state);
