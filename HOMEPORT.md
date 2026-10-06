@@ -103,16 +103,21 @@ AI 助手原先"看不到"这个面板，现已补上两处：
 **源码中不保留任何配置值**（除首次运行的默认值外）。全部 15 项设置存放在本地数据库的 `settings` 表，
 键前缀 `remote.`：
 
-| 键                                                          | 含义                                         |
-| ----------------------------------------------------------- | -------------------------------------------- |
-| `remote.frpcPath` / `remote.frpcConfigPath`                 | frpc 可执行文件与（提供方）配置文件          |
-| `remote.visitorConfigPath`                                  | 访客配置文件，用于读取访问端口               |
-| `remote.logPath`                                            | frpc 日志路径（用于运行时长与日志面板）      |
-| `remote.relayHost` / `remote.sshUser` / `remote.sshKeyPath` | 中转服务器的 SSH 连接参数                    |
-| `remote.dashboardUrl` / `remote.dashboardAuth`              | frps 面板地址与认证（`user:password`）       |
-| `remote.portMap`                                            | 代理名到访问端口的映射（每行 `名称 = 端口`） |
-| `remote.rustdeskDomain` / `remote.rustdeskKey`              | RustDesk 自建服务器参数                      |
-| `remote.instanceId` / `remote.region` / `remote.pricePerGb` | 阿里云实例、地域与流量单价                   |
+| 键                                                          | 含义                                                                             |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `remote.frpcPath` / `remote.frpcConfigPath`                 | frpc 可执行文件与（提供方）配置文件                                              |
+| `remote.visitorConfigPath`                                  | 访客配置文件，用于读取访问端口                                                   |
+| `remote.logPath`                                            | frpc 日志路径（用于运行时长与日志面板）                                          |
+| `remote.relayHost` / `remote.sshUser` / `remote.sshKeyPath` | 中转服务器的 SSH 连接参数                                                        |
+| `remote.dashboardUrl` / `remote.dashboardAuth`              | frps 面板地址与认证（`user:password`）                                           |
+| `remote.portMap`                                            | 代理名到访问端口的映射（每行 `名称 = 端口`）                                     |
+| `remote.rustdeskDomain` / `remote.rustdeskKey`              | RustDesk 自建服务器参数                                                          |
+| `remote.instanceId` / `remote.region` / `remote.pricePerGb` | 阿里云实例、地域与流量单价                                                       |
+| `remote.aliyunAccessKeyId` / `remote.aliyunAccessKeySecret` | 阿里云 API 凭据（可选；填写后**优先于**环境变量与 `~/.aliyun/credentials.json`） |
+
+> AccessKey Secret 按 DSH 的方式处理：**永不回显**——接口只返回「是否已配置」(`aliyunSecretSet`)，
+> 设置页输入框显示占位符「已配置——输入新值可替换」；留空保存时保留已存的值。
+> 数据库中明文存储（与主机密码、SSH 私钥一致，本应用的存储模型）。
 
 行为：
 
