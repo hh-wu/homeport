@@ -5,6 +5,7 @@ import { translate } from "@/i18n/translate";
 import { ipc } from "@/lib/ipc";
 import { errorMessage, toast } from "@/lib/toast";
 import type { AiSessionSummary, AiImageAttachment } from "@/types/models";
+import type { AiPermissionMode } from "@/types/models";
 import { imageHistoryError } from "./images";
 import { targetPaneId, useTabsStore } from "@/workbench/tabs";
 import { runAgentLoop, type RunnerHost } from "./runner";
@@ -55,6 +56,7 @@ interface AiStoreState {
     enabledTools: string[],
     maxHistoryTokens?: number | null,
     images?: AiImageAttachment[],
+    permissionMode?: AiPermissionMode,
   ) => Promise<void>;
 
   resume: (
@@ -63,6 +65,7 @@ interface AiStoreState {
     autoApprove: boolean,
     enabledTools: string[],
     maxHistoryTokens?: number | null,
+    permissionMode?: AiPermissionMode,
   ) => Promise<void>;
 
   stop: (sessionId: string) => void;
@@ -147,6 +150,7 @@ export const useAiStore = create<AiStoreState>((set, get) => {
     enabledTools: string[],
     maxHistoryTokens?: number | null,
     defaultTerminalId = targetPaneId(useTabsStore.getState()),
+    permissionMode?: AiPermissionMode,
   ) => {
     try {
       await runAgentLoop(
@@ -157,6 +161,7 @@ export const useAiStore = create<AiStoreState>((set, get) => {
         enabledTools,
         maxHistoryTokens,
         defaultTerminalId,
+        permissionMode,
       );
     } catch (err) {
       const message = errorMessage(err);
@@ -319,6 +324,7 @@ export const useAiStore = create<AiStoreState>((set, get) => {
       enabledTools,
       maxHistoryTokens,
       images = [],
+      permissionMode,
     ) => {
       const defaultTerminalId = targetPaneId(useTabsStore.getState());
       const trimmed = prompt.trim();
@@ -362,6 +368,7 @@ export const useAiStore = create<AiStoreState>((set, get) => {
         enabledTools,
         maxHistoryTokens,
         defaultTerminalId,
+        permissionMode,
       );
     },
 
@@ -371,6 +378,7 @@ export const useAiStore = create<AiStoreState>((set, get) => {
       autoApprove,
       enabledTools,
       maxHistoryTokens,
+      permissionMode,
     ) => {
       const runtime = get().runtime[sessionId];
       if (!model || !runtime || runtime.pending || !runtime.stepLimitReached) {
@@ -388,6 +396,8 @@ export const useAiStore = create<AiStoreState>((set, get) => {
         autoApprove,
         enabledTools,
         maxHistoryTokens,
+        undefined,
+        permissionMode,
       );
     },
 

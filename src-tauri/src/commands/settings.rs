@@ -97,6 +97,7 @@ fn validate_json_settings(input: JsonSettingsInput) -> AppResult<Vec<(String, St
         protocol: input.protocol,
         api_key: Some(input.api_key),
         auto_approve: input.auto_approve,
+        permission_mode: None,
         enabled_tools: Some(input.enabled_tools),
         max_history_tokens: input.max_history_tokens,
     })?;

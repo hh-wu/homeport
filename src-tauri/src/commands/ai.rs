@@ -25,8 +25,24 @@ const API_KEY_SETTING: &str = "ai.api_key";
 const PROTOCOL_SETTING: &str = "ai.protocol";
 const MODEL_SETTING: &str = "ai.model";
 const AUTO_APPROVE_SETTING: &str = "ai.auto_approve";
+const PERMISSION_MODE_SETTING: &str = "ai.permission_mode";
 const ENABLED_TOOLS_SETTING: &str = "ai.enabled_tools";
 const MAX_HISTORY_TOKENS_SETTING: &str = "ai.max_history_tokens";
+
+const PERMISSION_MODES: [&str; 3] = ["readonly", "workspace", "autonomous"];
+
+fn normalize_permission_mode(raw: &str, auto_approve: bool) -> AppResult<String> {
+    let value = raw.trim();
+    if value.is_empty() {
+        return Ok(if auto_approve { "autonomous" } else { "workspace" }.to_string());
+    }
+    if PERMISSION_MODES.contains(&value) {
+        return Ok(value.to_string());
+    }
+    Err(AppError::Invalid(format!(
+        "unknown permission mode: {value}"
+    )))
+}
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,6 +52,7 @@ pub struct AiConfig {
     pub protocol: Protocol,
     pub model: String,
     pub auto_approve: bool,
+    pub permission_mode: String,
     pub enabled_tools: Option<Vec<String>>,
     pub max_history_tokens: Option<u32>,
 }
@@ -48,6 +65,8 @@ pub struct AiConfigInput {
     pub api_key: Option<String>,
     #[serde(default)]
     pub auto_approve: bool,
+    #[serde(default)]
+    pub permission_mode: Option<String>,
     pub enabled_tools: Option<Vec<String>>,
     #[serde(default)]
     pub max_history_tokens: Option<u32>,
@@ -146,6 +165,10 @@ pub(crate) fn validate_ai_config(input: AiConfigInput) -> AppResult<ValidatedAiC
             "more than {MAX_ENABLED_TOOLS} AI tools were enabled"
         )));
     }
+    let permission_mode = normalize_permission_mode(
+        input.permission_mode.as_deref().unwrap_or_default(),
+        input.auto_approve,
+    )?;
     let mut entries = vec![
         (BASE_URL_SETTING.to_string(), base_url.clone()),
         (
@@ -154,8 +177,9 @@ pub(crate) fn validate_ai_config(input: AiConfigInput) -> AppResult<ValidatedAiC
         ),
         (
             AUTO_APPROVE_SETTING.to_string(),
-            if input.auto_approve { "true" } else { "false" }.to_string(),
+            if permission_mode == "autonomous" { "true" } else { "false" }.to_string(),
         ),
+        (PERMISSION_MODE_SETTING.to_string(), permission_mode),
         (
             MAX_HISTORY_TOKENS_SETTING.to_string(),
             input
@@ -347,6 +371,12 @@ pub async fn ai_get_config(state: State<'_, AppState>) -> AppResult<AiConfig> {
         .await?
         .as_deref()
         == Some("true");
+    let permission_mode = normalize_permission_mode(
+        &settings_repo::get(&state.db, PERMISSION_MODE_SETTING)
+            .await?
+            .unwrap_or_default(),
+        auto_approve,
+    )?;
     let enabled_tools = settings_repo::get(&state.db, ENABLED_TOOLS_SETTING)
         .await?
         .map(|value| {
@@ -376,6 +406,7 @@ pub async fn ai_get_config(state: State<'_, AppState>) -> AppResult<AiConfig> {
         protocol,
         model,
         auto_approve,
+        permission_mode,
         enabled_tools,
         max_history_tokens,
     })
@@ -402,6 +433,27 @@ pub async fn ai_set_config(state: State<'_, AppState>, input: AiConfigInput) -> 
         entries.push((MODEL_SETTING.to_string(), String::new()));
     }
     settings_repo::set_many(&state.db, &entries).await?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn ai_set_permission_mode(state: State<'_, AppState>, mode: String) -> AppResult<()> {
+    let mode = normalize_permission_mode(&mode, false)?;
+    settings_repo::set_many(
+        &state.db,
+        &[
+            (PERMISSION_MODE_SETTING.to_string(), mode.clone()),
+            (
+                AUTO_APPROVE_SETTING.to_string(),
+                if mode == "autonomous" {
+                    "true".to_string()
+                } else {
+                    "false".to_string()
+                },
+            ),
+        ],
+    )
+    .await?;
     Ok(())
 }
 
@@ -669,6 +721,7 @@ mod tests {
             protocol: Protocol::Openai,
             model: "model".into(),
             auto_approve: false,
+            permission_mode: "workspace".into(),
             enabled_tools: None,
             max_history_tokens: None,
         };

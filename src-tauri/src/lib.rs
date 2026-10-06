@@ -297,6 +297,7 @@ pub fn run() {
             commands::ai::ai_reveal_api_key,
             commands::ai::ai_set_config,
             commands::ai::ai_set_model,
+            commands::ai::ai_set_permission_mode,
             commands::ai::ai_list_models,
             commands::ai::ai_model_limits,
             commands::ai::ai_chat,

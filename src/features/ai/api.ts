@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ipc } from "@/lib/ipc";
-import type { AiConfig, AiProtocol } from "@/types/models";
+import type { AiConfig, AiPermissionMode, AiProtocol } from "@/types/models";
 import { clearModelLimitsCache } from "./model-limits";
 
 const configKey = ["ai", "config"] as const;
@@ -54,6 +54,7 @@ export function useSetAiConfig() {
           baseUrl: input.baseUrl,
           protocol: input.protocol,
           autoApprove: input.autoApprove,
+          permissionMode: input.permissionMode ?? prev.permissionMode,
           enabledTools: input.enabledTools ?? prev.enabledTools,
           maxHistoryTokens: input.maxHistoryTokens,
           hasApiKey:
@@ -77,6 +78,32 @@ export function useAiModels(enabled: boolean) {
     enabled: enabled && Boolean(config?.baseUrl.trim()),
     retry: false,
     staleTime: 5 * 60_000,
+  });
+}
+
+export function useSetPermissionMode() {
+  const qc = useQueryClient();
+  return useMutation({
+    scope: { id: "ai-settings" },
+    mutationFn: (mode: AiPermissionMode) => ipc.ai.setPermissionMode(mode),
+    onMutate: async (mode) => {
+      await qc.cancelQueries({ queryKey: configKey });
+      const previous = qc.getQueryData<AiConfig>(configKey);
+      qc.setQueryData<AiConfig>(configKey, (current) =>
+        current
+          ? {
+              ...current,
+              permissionMode: mode,
+              autoApprove: mode === "autonomous",
+            }
+          : current,
+      );
+      return { previous };
+    },
+    onError: (_error, _mode, context) => {
+      if (context?.previous) qc.setQueryData(configKey, context.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: configKey }),
   });
 }
 

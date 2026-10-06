@@ -9,17 +9,20 @@ import {
   ArrowUp,
   Check,
   Copy,
+  Eye,
   History,
   KeyRound,
   ImagePlus,
   Loader2,
   MessageCirclePlus,
+  PencilLine,
   PictureInPicture2,
   Sparkles,
   Square,
   Terminal as TerminalIcon,
   Trash2,
   X,
+  Zap,
 } from "lucide-react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -63,7 +66,12 @@ import {
   imageHistoryError,
   prepareImage,
 } from "./images";
-import { useAiConfig, useAiModels, useSetAiModel } from "./api";
+import {
+  useAiConfig,
+  useAiModels,
+  useSetAiModel,
+  useSetPermissionMode,
+} from "./api";
 import { safeExternalUrl } from "./links";
 import { usePlanStore } from "./plan";
 import { shouldSubmitPrompt } from "./input";
@@ -83,6 +91,27 @@ const SUGGESTIONS = [
   "ai.suggestion.terminalOutput",
   "ai.suggestion.resourceUsage",
   "ai.suggestion.systemLogs",
+] as const;
+
+const PERMISSION_MODES = [
+  {
+    value: "readonly",
+    icon: Eye,
+    labelKey: "ai.permission.readonly",
+    hintKey: "ai.permission.readonlyHint",
+  },
+  {
+    value: "workspace",
+    icon: PencilLine,
+    labelKey: "ai.permission.workspace",
+    hintKey: "ai.permission.workspaceHint",
+  },
+  {
+    value: "autonomous",
+    icon: Zap,
+    labelKey: "ai.permission.autonomous",
+    hintKey: "ai.permission.autonomousHint",
+  },
 ] as const;
 
 function PlanStrip() {
@@ -126,6 +155,10 @@ export function AssistantPanel({ width }: { width: number }) {
   const { t } = useI18n();
   const { data: config } = useAiConfig();
   const setModel = useSetAiModel();
+  const setPermissionMode = useSetPermissionMode();
+  const mode = config?.permissionMode ?? "workspace";
+  const modeMeta =
+    PERMISSION_MODES.find((item) => item.value === mode) ?? PERMISSION_MODES[1];
   const configured = Boolean(config?.baseUrl.trim());
   const {
     data: fetchedModels,
@@ -330,6 +363,7 @@ export function AssistantPanel({ width }: { width: number }) {
         enabledToolList,
         config?.maxHistoryTokens,
         attachments,
+        config?.permissionMode,
       );
       return true;
     } catch (err) {
@@ -360,6 +394,7 @@ export function AssistantPanel({ width }: { width: number }) {
       config?.autoApprove ?? false,
       enabledToolList,
       config?.maxHistoryTokens,
+      config?.permissionMode,
     );
   };
 
@@ -674,6 +709,41 @@ export function AssistantPanel({ width }: { width: number }) {
                   showChevron={false}
                   className="h-[var(--toolbar-control-size)] w-auto min-w-0 max-w-[70%] border-0 bg-transparent px-2 text-xs hover:bg-accent focus-visible:ring-0"
                 />
+                <DropdownMenu>
+                  <Tooltip content={t("ai.permission.label")}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-[var(--toolbar-control-size)] shrink-0 gap-1 px-2 text-xs"
+                        aria-label={t("ai.permission.label")}
+                      >
+                        <modeMeta.icon className="size-3.5" />
+                        {t(modeMeta.labelKey)}
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </Tooltip>
+                  <DropdownMenuContent align="start" className="w-64">
+                    {PERMISSION_MODES.map((item) => (
+                      <DropdownMenuItem
+                        key={item.value}
+                        className="flex-col items-start gap-0.5"
+                        onSelect={() => setPermissionMode.mutate(item.value)}
+                      >
+                        <span className="flex items-center gap-1.5 text-xs">
+                          <item.icon className="size-3.5" />
+                          {t(item.labelKey)}
+                          {mode === item.value && (
+                            <Check className="ml-auto size-3.5 text-link" />
+                          )}
+                        </span>
+                        <span className="text-2xs text-muted-foreground">
+                          {t(item.hintKey)}
+                        </span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <div className="ml-auto flex items-center gap-1.5">
                   {pending ? (
                     <Tooltip content={t("ai.stopHint")}>

@@ -1084,6 +1084,15 @@ export const zhCN: Dictionary = {
   ai: {
     viewTitle: "AI 助手",
     plan: "计划",
+    permission: {
+      label: "权限模式",
+      readonly: "仅可查看",
+      readonlyHint: "只能使用只读工具",
+      workspace: "工作区内修改",
+      workspaceHint: "本机文件修改直接执行，其他更改需要批准",
+      autonomous: "完全权限",
+      autonomousHint: "操作自动执行，不再逐个批准",
+    },
     hidePanel: "隐藏面板",
     setup: {
       title: "配置助手",

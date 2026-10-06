@@ -1112,6 +1112,16 @@ export const en = {
   ai: {
     viewTitle: "AI assistant",
     plan: "Plan",
+    permission: {
+      label: "Permission mode",
+      readonly: "Read only",
+      readonlyHint: "Only read-only tools are available",
+      workspace: "Workspace edits",
+      workspaceHint:
+        "Local file changes run directly, other changes need approval",
+      autonomous: "Full access",
+      autonomousHint: "Approved operations run automatically",
+    },
     hidePanel: "Hide panel",
     setup: {
       title: "Set up the assistant",

@@ -8,6 +8,7 @@ import type {
   AiChatResult,
   AiMemoryEntry,
   AiModelLimits,
+  AiPermissionMode,
   AiConfig,
   AiProtocol,
   AiSession,
@@ -420,12 +421,15 @@ export const ipc = {
       protocol: AiProtocol;
       apiKey?: string;
       autoApprove: boolean;
+      permissionMode?: AiPermissionMode;
       enabledTools?: string[];
       maxHistoryTokens: number | null;
     }) => invoke<void>("ai_set_config", { input }),
 
     listModels: () => invoke<string[]>("ai_list_models"),
     setModel: (model: string) => invoke<void>("ai_set_model", { model }),
+    setPermissionMode: (mode: AiPermissionMode) =>
+      invoke<void>("ai_set_permission_mode", { mode }),
     modelLimits: (model: string) =>
       invoke<AiModelLimits>("ai_model_limits", { model }),
 

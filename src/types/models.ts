@@ -519,12 +519,15 @@ export interface AiMemoryEntry {
 
 export type AiProtocol = "openai" | "anthropic";
 
+export type AiPermissionMode = "readonly" | "workspace" | "autonomous";
+
 export interface AiConfig {
   hasApiKey: boolean;
   baseUrl: string;
   protocol: AiProtocol;
   model: string;
   autoApprove: boolean;
+  permissionMode: AiPermissionMode;
   enabledTools: string[] | null;
   maxHistoryTokens: number | null;
 }
