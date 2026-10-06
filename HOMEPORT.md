@@ -39,6 +39,9 @@ AI 助手（右侧 aux 面板）与文件（底部 SFTP 面板）都可以**拖�
 - 弹窗识别靠 `getCurrentWindow().label`，不依赖 URL 参数；主题、缩放、i18n、react-query 通过复用 `AppProviders` 自动生效
 - AI 面板在有任务运行时禁用拖出（运行中的审批对话框不会藏到看不见的地方）
 - **Tauri v2 的窗口权限按标签授权**：`capabilities/default.json` 的 `windows` 必须包含 `popout-*`，否则弹窗没有 `start-dragging` / `close` / `minimize` 权限，会出现"窗口卡住、拖不动、关不掉"
+- **应用级窗口钩子必须按标签过滤**：`on_window_event`（托盘拦截）与 `on_page_load`（会话清理、自动转发）对所有窗口触发，
+  不过滤 `main` 会导致弹窗被 `prevent_close` 关不掉、主窗口的 SSH/SFTP/监控/转发会话被当成孤儿全部关闭
+  （表现为"拖出面板后终端全部断开"）
 
 ## 面板内容
 
