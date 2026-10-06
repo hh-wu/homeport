@@ -95,13 +95,15 @@ pub fn run() {
     let app = builder
         .on_window_event(|window, event| {
             #[cfg(desktop)]
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                let app = window.app_handle().clone();
-                tauri::async_runtime::spawn(async move {
-                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                    tray::hide_main_window(&app);
-                });
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let app = window.app_handle().clone();
+                    tauri::async_runtime::spawn(async move {
+                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        tray::hide_main_window(&app);
+                    });
+                }
             }
             #[cfg(not(desktop))]
             let _ = (window, event);
