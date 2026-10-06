@@ -6,6 +6,7 @@ import {
   FolderOpen,
   Monitor,
   Play,
+  Plus,
   Radio,
   RefreshCw,
   Server,
@@ -31,6 +32,7 @@ import { useI18n } from "@/i18n";
 import { ipc } from "@/lib/ipc";
 import { errorMessage, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import type { RcProxy } from "@/types/models";
 import { useOverlayStore } from "@/workbench/overlays";
 import {
   useRcLog,
@@ -115,6 +117,41 @@ export function FrpTab() {
       .catch((error) =>
         toast.error(t("remote.logFailed"), errorMessage(error)),
       );
+
+  const addAsHost = useCallback(
+    async (proxy: RcProxy) => {
+      if (!proxy.accessPort) return;
+      try {
+        const hosts = await ipc.hosts.list();
+        const exists = hosts.some(
+          (host) =>
+            !host.deletedAt &&
+            host.address === "127.0.0.1" &&
+            host.port === proxy.accessPort,
+        );
+        if (exists) {
+          toast.info(t("remote.hostExists", { label: proxy.name }));
+          return;
+        }
+        const keys = (await ipc.keys.list()).filter((key) => !key.deletedAt);
+        const key = keys.length === 1 ? keys[0] : null;
+        await ipc.hosts.create({
+          label: proxy.name,
+          address: "127.0.0.1",
+          port: proxy.accessPort,
+          authType: key ? "key" : null,
+          keyId: key?.id ?? null,
+        });
+        toast.success(
+          t("remote.hostAdded", { label: proxy.name }),
+          key ? undefined : t("remote.hostNeedsAuth"),
+        );
+      } catch (error) {
+        toast.error(t("remote.hostAddFailed"), errorMessage(error));
+      }
+    },
+    [t],
+  );
 
   return (
     <>
@@ -372,7 +409,7 @@ export function FrpTab() {
                               >
                                 <Copy /> {t("remote.copyCommand")}
                               </ContextMenuItem>
-                              {connection.rdp && (
+                              {connection.rdp ? (
                                 <ContextMenuItem
                                   onSelect={() =>
                                     void ipc.remoteConsole
@@ -386,6 +423,12 @@ export function FrpTab() {
                                   }
                                 >
                                   <Monitor /> {t("remote.connectRdp")}
+                                </ContextMenuItem>
+                              ) : (
+                                <ContextMenuItem
+                                  onSelect={() => void addAsHost(proxy)}
+                                >
+                                  <Plus /> {t("remote.addAsHost")}
                                 </ContextMenuItem>
                               )}
                             </>
