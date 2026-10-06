@@ -24,6 +24,21 @@
 | `scripts/check-conventions.mjs`                    | 顺带修复 Windows 路径 bug（`URL.pathname` → `fileURLToPath`），原版在 Windows 上必失败                  |
 | `src/i18n/locales/parity.test.ts`                  | 允许清单补入 `IP`、`RustDesk`                                                                           |
 
+## 面板拖出为独立窗口
+
+AI 助手（右侧 aux 面板）与文件（底部 SFTP 面板）都可以**拖出为独立窗口**，也可以随时**固定回主窗口**：
+
+- 面板头部的「拖出到独立窗口」按钮（`PictureInPicture2` 图标）→ Rust 创建一个带自绘标题栏的独立窗口，只渲染该面板
+- 拖出期间主窗口原位置显示占位（「该面板已在独立窗口中打开」+「固定回主窗口」按钮）
+- 弹窗标题栏的 📌 按钮、占位上的按钮、或直接关闭弹窗，都会把面板装回主窗口
+
+实现要点（`src-tauri/src/commands/window.rs` + `src/workbench/popout.ts` + `src/app/PopoutApp.tsx`）：
+
+- **同一时刻每个面板只有一个活实例**（拖出后主窗口卸载该面板，装回时重新挂载自动拉新数据），因此**不需要跨窗口状态同步**
+- 拖出状态以 **Rust 窗口管理器为准**（`get_webview_window(label)` 存在即已拖出），前端用 `popout://closed` 事件镜像，不落盘——重启应用后一切归位，没有残留状态
+- 弹窗识别靠 `getCurrentWindow().label`，不依赖 URL 参数；主题、缩放、i18n、react-query 通过复用 `AppProviders` 自动生效
+- AI 面板在有任务运行时禁用拖出（运行中的审批对话框不会藏到看不见的地方）
+
 ## 面板内容
 
 面板顶部是一个三段式切换（`SegmentedControl`），按能力拆成三个 Tab，避免把不同生命周期的东西塞进一个滚动条：

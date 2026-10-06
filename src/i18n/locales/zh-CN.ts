@@ -930,6 +930,13 @@ export const zhCN: Dictionary = {
     },
   },
 
+  popout: {
+    open: "拖出到独立窗口",
+    detached: "该面板已在独立窗口中打开",
+    dockBack: "固定回主窗口",
+    openFailed: "无法打开独立窗口",
+  },
+
   sftp: {
     panelTitle: "文件",
     hidePanel: "隐藏面板",

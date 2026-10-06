@@ -2,10 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 
 import { AppProviders } from "@/app/providers";
+import { PopoutApp } from "@/app/PopoutApp";
 import App from "@/App";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { DEFAULT_LOCALE, detectLocale } from "@/i18n/config";
 import { loadLocale } from "@/i18n/translate";
+import { POPOUT_PANEL } from "@/workbench/popout";
 import "@/styles/globals.css";
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -32,7 +34,7 @@ async function start() {
     <React.StrictMode>
       <ErrorBoundary>
         <AppProviders>
-          <App />
+          {POPOUT_PANEL ? <PopoutApp panel={POPOUT_PANEL} /> : <App />}
         </AppProviders>
       </ErrorBoundary>
     </React.StrictMode>,

@@ -14,6 +14,7 @@ import {
   ImagePlus,
   Loader2,
   MessageCirclePlus,
+  PictureInPicture2,
   Sparkles,
   Square,
   Terminal as TerminalIcon,
@@ -50,6 +51,7 @@ import {
   PanelHeader,
   PANEL_HEADER_ACTION_CLASS,
 } from "@/workbench/PanelHeader";
+import { POPOUT_PANEL, popoutPanel } from "@/workbench/popout";
 import { findPane, targetPaneId, useTabsStore } from "@/workbench/tabs";
 import { getSession } from "@/features/terminal/sessions";
 import type { AiImageAttachment } from "@/types/models";
@@ -411,17 +413,33 @@ export function AssistantPanel({ width }: { width: number }) {
                 </DropdownMenu>
               </>
             )}
-            <Tooltip content={t("ai.hidePanel")}>
-              <Button
-                size="icon"
-                variant="ghost"
-                className={PANEL_HEADER_ACTION_CLASS}
-                aria-label={t("ai.hidePanel")}
-                onClick={toggleAux}
-              >
-                <X className="size-4" />
-              </Button>
-            </Tooltip>
+            {!POPOUT_PANEL && (
+              <Tooltip content={t("popout.open")}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={PANEL_HEADER_ACTION_CLASS}
+                  aria-label={t("popout.open")}
+                  disabled={Boolean(runtime?.pending)}
+                  onClick={() => void popoutPanel("assistant")}
+                >
+                  <PictureInPicture2 className="size-4" />
+                </Button>
+              </Tooltip>
+            )}
+            {!POPOUT_PANEL && (
+              <Tooltip content={t("ai.hidePanel")}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={PANEL_HEADER_ACTION_CLASS}
+                  aria-label={t("ai.hidePanel")}
+                  onClick={toggleAux}
+                >
+                  <X className="size-4" />
+                </Button>
+              </Tooltip>
+            )}
           </>
         }
       />

@@ -542,6 +542,9 @@ export const ipc = {
     setTrafficLightInset: (x: number, height: number) =>
       invoke<void>("window_set_traffic_light_inset", { x, height }),
     hideToTray: () => invoke<void>("window_hide_to_tray"),
+    popout: (panel: string) => invoke<void>("window_popout", { panel }),
+    dock: (panel: string) => invoke<void>("window_dock", { panel }),
+    popouts: () => invoke<string[]>("window_popouts"),
   },
   tray: {
     setTasks: (data: TrayMenuData) => invoke<void>("tray_set_tasks", { data }),

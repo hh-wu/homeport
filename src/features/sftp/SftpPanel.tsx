@@ -6,6 +6,7 @@ import {
   EyeOff,
   History,
   Loader2,
+  PictureInPicture2,
   Search,
   SearchX,
   X,
@@ -26,6 +27,7 @@ import {
   PanelHeader,
   PANEL_HEADER_ACTION_CLASS,
 } from "@/workbench/PanelHeader";
+import { POPOUT_PANEL, popoutPanel } from "@/workbench/popout";
 import { useZoomStore, zoomFactor } from "@/workbench/zoom";
 import { FilePane } from "./FilePane";
 import { useSftpStore } from "./store";
@@ -143,16 +145,31 @@ export function SftpPanel({ height }: { height: number }) {
                 <History className="size-4" />
               </Button>
             </Tooltip>
-            <Tooltip content={t("sftp.hidePanel")}>
-              <Button
-                size="icon"
-                variant="ghost"
-                className={PANEL_HEADER_ACTION_CLASS}
-                onClick={() => setPanelVisible(false)}
-              >
-                <X className="size-4" />
-              </Button>
-            </Tooltip>
+            {!POPOUT_PANEL && (
+              <Tooltip content={t("popout.open")}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={PANEL_HEADER_ACTION_CLASS}
+                  aria-label={t("popout.open")}
+                  onClick={() => void popoutPanel("files")}
+                >
+                  <PictureInPicture2 className="size-4" />
+                </Button>
+              </Tooltip>
+            )}
+            {!POPOUT_PANEL && (
+              <Tooltip content={t("sftp.hidePanel")}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={PANEL_HEADER_ACTION_CLASS}
+                  onClick={() => setPanelVisible(false)}
+                >
+                  <X className="size-4" />
+                </Button>
+              </Tooltip>
+            )}
           </>
         }
       />

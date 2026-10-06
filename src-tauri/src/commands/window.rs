@@ -1,4 +1,71 @@
 use crate::error::{AppError, AppResult};
+use tauri::{Emitter, Manager};
+
+const POPOUT_PANELS: [(&str, &str); 2] = [
+    ("assistant", "popout-assistant"),
+    ("files", "popout-files"),
+];
+
+fn popout_label(panel: &str) -> AppResult<&'static str> {
+    POPOUT_PANELS
+        .iter()
+        .find(|(name, _)| *name == panel)
+        .map(|(_, label)| *label)
+        .ok_or_else(|| AppError::Invalid(format!("unknown popout panel: {panel}")))
+}
+
+#[tauri::command]
+pub async fn window_popout(app: tauri::AppHandle, panel: String) -> AppResult<()> {
+    let label = popout_label(&panel)?;
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.unminimize();
+        window
+            .set_focus()
+            .map_err(|e| AppError::Other(e.to_string()))?;
+        return Ok(());
+    }
+    let (width, height) = if panel == "assistant" {
+        (440.0, 720.0)
+    } else {
+        (1080.0, 600.0)
+    };
+    let url = tauri::WebviewUrl::App("index.html".into());
+    let window = tauri::WebviewWindowBuilder::new(&app, label, url)
+        .title("Homeport")
+        .inner_size(width, height)
+        .min_inner_size(320.0, 320.0)
+        .decorations(false)
+        .center()
+        .build()
+        .map_err(|e| AppError::Other(e.to_string()))?;
+    let app_handle = app.clone();
+    window.on_window_event(move |event| {
+        if let tauri::WindowEvent::Destroyed = event {
+            let _ = app_handle.emit("popout://closed", panel.clone());
+        }
+    });
+    Ok(())
+}
+
+#[tauri::command]
+pub fn window_dock(app: tauri::AppHandle, panel: String) -> AppResult<()> {
+    let label = popout_label(&panel)?;
+    if let Some(window) = app.get_webview_window(label) {
+        window
+            .close()
+            .map_err(|e| AppError::Other(e.to_string()))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn window_popouts(app: tauri::AppHandle) -> Vec<String> {
+    POPOUT_PANELS
+        .iter()
+        .filter(|(_, label)| app.get_webview_window(label).is_some())
+        .map(|(name, _)| (*name).to_string())
+        .collect()
+}
 
 #[cfg(target_os = "macos")]
 const DEFAULT_INSET_X: f64 = 13.0;
@@ -59,6 +126,14 @@ pub fn window_hide_to_tray(app: tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn validates_popout_panels() {
+        assert_eq!(popout_label("assistant").unwrap(), "popout-assistant");
+        assert_eq!(popout_label("files").unwrap(), "popout-files");
+        assert!(popout_label("terminal").is_err());
+        assert!(popout_label("").is_err());
+    }
 
     #[test]
     fn validates_traffic_light_geometry() {
