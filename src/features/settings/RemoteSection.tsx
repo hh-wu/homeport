@@ -120,7 +120,11 @@ const GROUPS: {
       { key: "instanceId", labelKey: "remote.cfgInstanceId" },
       { key: "region", labelKey: "remote.cfgRegion" },
       { key: "pricePerGb", labelKey: "remote.cfgPrice", numeric: true },
-      { key: "aliyunAccessKeyId", labelKey: "remote.cfgAliyunAkId" },
+      {
+        key: "aliyunAccessKeyId",
+        labelKey: "remote.cfgAliyunAkId",
+        secret: true,
+      },
       {
         key: "aliyunAccessKeySecret",
         labelKey: "remote.cfgAliyunAkSecret",
@@ -141,8 +145,15 @@ function toConfig(draft: Draft): RcConfig {
   return {
     ...draft,
     pricePerGb: Number(draft.pricePerGb) || 0,
+    aliyunKeyIdSet: draft.aliyunKeyIdSet === "true",
     aliyunSecretSet: draft.aliyunSecretSet === "true",
   } as RcConfig;
+}
+
+function secretConfigured(config: RcConfig, key: keyof RcConfig): boolean {
+  if (key === "aliyunAccessKeyId") return config.aliyunKeyIdSet;
+  if (key === "aliyunAccessKeySecret") return config.aliyunSecretSet;
+  return false;
 }
 
 export function RemoteSection() {
@@ -205,7 +216,7 @@ function RemoteForm({ config }: { config: RcConfig }) {
   const save = useRcSaveConfig();
   const verify = useRcVerify();
   const [draft, setDraft] = useState<Draft>(() => toDraft(config));
-  const [secretDraft, setSecretDraft] = useState("");
+  const [secretDrafts, setSecretDrafts] = useState<Record<string, string>>({});
   const [verifying, setVerifying] = useState<VerifySection | null>(null);
   const [results, setResults] = useState<
     Partial<Record<VerifySection, RcVerify>>
@@ -236,11 +247,11 @@ function RemoteForm({ config }: { config: RcConfig }) {
     }
   };
 
-  const commitSecret = () => {
-    const value = secretDraft.trim();
+  const commitSecret = (field: FieldSpec) => {
+    const value = (secretDrafts[field.key] ?? "").trim();
     if (!value) return;
-    setSecretDraft("");
-    commit({ ...draft, aliyunAccessKeySecret: value });
+    setSecretDrafts((current) => ({ ...current, [field.key]: "" }));
+    commit({ ...draft, [field.key]: value });
   };
 
   const browse = async (field: FieldSpec) => {
@@ -299,16 +310,21 @@ function RemoteForm({ config }: { config: RcConfig }) {
                 {field.secret ? (
                   <Input
                     type="password"
-                    value={secretDraft}
+                    value={secretDrafts[field.key] ?? ""}
                     placeholder={
-                      config.aliyunSecretSet
+                      secretConfigured(config, field.key)
                         ? t("remote.secretConfigured")
                         : t("remote.secretEmpty")
                     }
                     spellCheck={false}
                     autoComplete="off"
-                    onChange={(event) => setSecretDraft(event.target.value)}
-                    onBlur={commitSecret}
+                    onChange={(event) =>
+                      setSecretDrafts((current) => ({
+                        ...current,
+                        [field.key]: event.target.value,
+                      }))
+                    }
+                    onBlur={() => commitSecret(field)}
                   />
                 ) : field.picker ? (
                   <div className="flex items-center gap-2">

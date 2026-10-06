@@ -482,6 +482,7 @@ export interface RcConfig {
   visitorConfigPath: string;
   aliyunAccessKeyId: string;
   aliyunAccessKeySecret: string;
+  aliyunKeyIdSet: boolean;
   aliyunSecretSet: boolean;
 }
 

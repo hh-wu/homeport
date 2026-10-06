@@ -89,6 +89,8 @@ pub struct RcConfig {
     aliyun_access_key_id: String,
     aliyun_access_key_secret: String,
     #[serde(skip_deserializing)]
+    aliyun_key_id_set: bool,
+    #[serde(skip_deserializing)]
     aliyun_secret_set: bool,
 }
 
@@ -112,6 +114,7 @@ impl Default for RcConfig {
             visitor_config_path: String::new(),
             aliyun_access_key_id: String::new(),
             aliyun_access_key_secret: String::new(),
+            aliyun_key_id_set: false,
             aliyun_secret_set: false,
         }
     }
@@ -216,6 +219,7 @@ fn validate(config: &RcConfig) -> AppResult<RcConfig> {
             "aliyun access key secret",
             true,
         )?,
+        aliyun_key_id_set: config.aliyun_key_id_set,
         aliyun_secret_set: config.aliyun_secret_set,
     })
 }
@@ -267,6 +271,7 @@ async fn load_config(db: &SqlitePool) -> AppResult<RcConfig> {
             KEY_ALIYUN_SK,
             fallback.aliyun_access_key_secret.clone()
         ),
+        aliyun_key_id_set: false,
         aliyun_secret_set: false,
     };
 
@@ -285,7 +290,9 @@ async fn save_config(db: &SqlitePool, config: &RcConfig) -> AppResult<RcConfig> 
 
 fn redacted(config: RcConfig) -> RcConfig {
     RcConfig {
+        aliyun_key_id_set: !config.aliyun_access_key_id.is_empty(),
         aliyun_secret_set: !config.aliyun_access_key_secret.is_empty(),
+        aliyun_access_key_id: String::new(),
         aliyun_access_key_secret: String::new(),
         ..config
     }
@@ -1078,14 +1085,19 @@ pub async fn rc_set_config(
     state: tauri::State<'_, AppState>,
     config: RcConfig,
 ) -> AppResult<RcConfig> {
-    let config = if config.aliyun_access_key_secret.is_empty() {
-        let stored = load_config(&state.db).await?;
-        RcConfig {
-            aliyun_access_key_secret: stored.aliyun_access_key_secret,
-            ..config
-        }
-    } else {
-        config
+    let stored = load_config(&state.db).await?;
+    let config = RcConfig {
+        aliyun_access_key_id: if config.aliyun_access_key_id.is_empty() {
+            stored.aliyun_access_key_id
+        } else {
+            config.aliyun_access_key_id
+        },
+        aliyun_access_key_secret: if config.aliyun_access_key_secret.is_empty() {
+            stored.aliyun_access_key_secret
+        } else {
+            config.aliyun_access_key_secret
+        },
+        ..config
     };
     save_config(&state.db, &config).await.map(redacted)
 }
@@ -1539,14 +1551,18 @@ mod tests {
     #[test]
     fn redaction_hides_the_aliyun_secret() {
         let config = RcConfig {
+            aliyun_access_key_id: "ak".into(),
             aliyun_access_key_secret: "sk".into(),
             ..RcConfig::default()
         };
         let view = redacted(config);
+        assert!(view.aliyun_key_id_set);
         assert!(view.aliyun_secret_set);
+        assert!(view.aliyun_access_key_id.is_empty());
         assert!(view.aliyun_access_key_secret.is_empty());
 
         let empty = redacted(RcConfig::default());
+        assert!(!empty.aliyun_key_id_set);
         assert!(!empty.aliyun_secret_set);
     }
 
