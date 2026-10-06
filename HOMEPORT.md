@@ -115,7 +115,7 @@ AI 助手原先"看不到"这个面板，现已补上两处：
 | `remote.instanceId` / `remote.region` / `remote.pricePerGb` | 阿里云实例、地域与流量单价                                                       |
 | `remote.aliyunAccessKeyId` / `remote.aliyunAccessKeySecret` | 阿里云 API 凭据（可选；填写后**优先于**环境变量与 `~/.aliyun/credentials.json`） |
 
-> AccessKey Secret 按 DSH 的方式处理：**永不回显**——接口只返回「是否已配置」(`aliyunSecretSet`)，
+> AccessKey ID 与 Secret 按 DSH 的方式处理：**都不回显**——接口只返回「是否已配置」(`aliyunKeyIdSet` / `aliyunSecretSet`)，
 > 设置页输入框显示占位符「已配置——输入新值可替换」；留空保存时保留已存的值。
 > 数据库中明文存储（与主机密码、SSH 私钥一致，本应用的存储模型）。
 
