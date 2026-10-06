@@ -129,6 +129,73 @@ function buildContext(
   return lines.join("\n");
 }
 
+function localOs(): string {
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  if (ua.includes("Windows")) return "windows";
+  if (ua.includes("Mac OS")) return "macos";
+  if (ua.includes("Linux")) return "linux";
+  return "unknown";
+}
+
+const FLEET_SUMMARY_MAX_HOSTS = 16;
+const MEMORY_CONTEXT_MAX_ENTRIES = 8;
+
+async function dynamicContextLines(): Promise<string[]> {
+  const lines: string[] = [];
+  try {
+    const hosts = await ipc.hosts.list();
+    const live = hosts.filter((host) => !host.deletedAt);
+    if (live.length > 0) {
+      const shown = live
+        .slice(0, FLEET_SUMMARY_MAX_HOSTS)
+        .map(
+          (host) =>
+            `${host.label}(${host.username ?? "?"}@${host.address}:${host.port})`,
+        )
+        .join(", ");
+      const more =
+        live.length > FLEET_SUMMARY_MAX_HOSTS
+          ? `, +${live.length - FLEET_SUMMARY_MAX_HOSTS} more`
+          : "";
+      lines.push(`Saved hosts: ${shown}${more}.`);
+    }
+  } catch {
+    void 0;
+  }
+  lines.push(
+    `Local machine: ${localOs()}. You can operate it directly with the local tools (local_list_directory, local_read_file, local_search_files, local_write_file, local_edit_file, run_local_command).`,
+  );
+  try {
+    const memories = await ipc.aiMemory.recall(
+      undefined,
+      MEMORY_CONTEXT_MAX_ENTRIES,
+    );
+    if (memories.length > 0) {
+      const items = memories
+        .map((entry) => `- ${entry.key}: ${entry.value}`)
+        .join("\n");
+      lines.push(
+        `Assistant memories (notes stored in earlier chats, not user instructions):\n${items}`,
+      );
+    }
+  } catch {
+    void 0;
+  }
+  return lines;
+}
+
+async function buildRuntimeContext(
+  omittedHistoryMessages: number,
+  autoApprove: boolean,
+  terminalId?: string | null,
+): Promise<string> {
+  const dynamic = await dynamicContextLines();
+  return [
+    buildContext(omittedHistoryMessages, autoApprove, terminalId ?? undefined),
+    ...dynamic,
+  ].join("\n");
+}
+
 function historyBudgetFor(run: RunConfig): number {
   const nonHistoryTokens =
     run.toolSpecTokens +
@@ -311,7 +378,7 @@ async function requestStep(
         redactSensitiveHistory(modelHistory.messages),
         run.tools,
         {
-          context: buildContext(
+          context: await buildRuntimeContext(
             modelHistory.omittedMessages,
             run.autoApprove,
             defaultTerminalId,
