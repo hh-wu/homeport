@@ -35,17 +35,23 @@ export function PopoutApp({ panel }: { panel: PopoutPanel }) {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-surface text-surface-foreground">
       <PopoutTitleBar panel={panel} />
-      <div className="flex min-h-0 flex-1">
-        <ErrorBoundary>
-          <Suspense fallback={null}>
-            {panel === "assistant" ? (
+      {panel === "assistant" ? (
+        <div className="flex min-h-0 flex-1">
+          <ErrorBoundary>
+            <Suspense fallback={null}>
               <AssistantPanel width={size.width} />
-            ) : (
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <ErrorBoundary>
+            <Suspense fallback={null}>
               <SftpPanel height={size.height - TITLE_BAR_H} />
-            )}
-          </Suspense>
-        </ErrorBoundary>
-      </div>
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      )}
     </div>
   );
 }
