@@ -6,6 +6,7 @@ import type { HighlightRule } from "@/features/terminal/highlight-rules";
 import type {
   AiChatMessage,
   AiChatResult,
+  AiMemoryEntry,
   AiModelLimits,
   AiConfig,
   AiProtocol,
@@ -31,6 +32,10 @@ import type {
   Identity,
   IdentityInput,
   KeyFile,
+  LocalCommandResult,
+  LocalEntry,
+  LocalFileContent,
+  LocalSearchHit,
   MonitorStatsEvent,
   PortForward,
   PortForwardInput,
@@ -545,6 +550,40 @@ export const ipc = {
     popout: (panel: string) => invoke<void>("window_popout", { panel }),
     dock: (panel: string) => invoke<void>("window_dock", { panel }),
     popouts: () => invoke<string[]>("window_popouts"),
+  },
+  localFs: {
+    listDirectory: (path: string) =>
+      invoke<LocalEntry[]>("local_list_directory", { path }),
+    readFile: (path: string, offset?: number, limit?: number) =>
+      invoke<LocalFileContent>("local_read_file", { path, offset, limit }),
+    writeFile: (path: string, content: string) =>
+      invoke<void>("local_write_file", { path, content }),
+    editFile: (
+      path: string,
+      oldString: string,
+      newString: string,
+      replaceAll?: boolean,
+    ) =>
+      invoke<number>("local_edit_file", {
+        path,
+        oldString,
+        newString,
+        replaceAll,
+      }),
+    searchFiles: (root: string, pattern: string, max?: number) =>
+      invoke<LocalSearchHit[]>("local_search_files", { root, pattern, max }),
+    runCommand: (command: string, timeoutSecs?: number) =>
+      invoke<LocalCommandResult>("local_run_command", {
+        command,
+        timeoutSecs,
+      }),
+  },
+  aiMemory: {
+    set: (key: string, value: string) =>
+      invoke<void>("ai_memory_set", { key, value }),
+    recall: (query?: string, limit?: number) =>
+      invoke<AiMemoryEntry[]>("ai_memory_recall", { query, limit }),
+    remove: (key: string) => invoke<void>("ai_memory_delete", { key }),
   },
   tray: {
     setTasks: (data: TrayMenuData) => invoke<void>("tray_set_tasks", { data }),

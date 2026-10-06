@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod ai_memory;
 pub mod app;
 pub mod batch;
 pub mod bookmarks;
@@ -9,6 +10,7 @@ pub mod history;
 pub mod hosts;
 pub mod identities;
 pub mod keys;
+pub mod local_fs;
 pub mod monitor;
 pub mod proxies;
 pub mod pty;

@@ -486,6 +486,37 @@ export interface RcConfig {
   aliyunSecretSet: boolean;
 }
 
+export interface LocalEntry {
+  name: string;
+  kind: string;
+  size: number;
+  modified: string;
+}
+
+export interface LocalFileContent {
+  content: string;
+  totalLines: number;
+  truncated: boolean;
+}
+
+export interface LocalSearchHit {
+  path: string;
+  line: number;
+  text: string;
+}
+
+export interface LocalCommandResult {
+  exitCode: number;
+  output: string;
+  timedOut: boolean;
+}
+
+export interface AiMemoryEntry {
+  key: string;
+  value: string;
+  updatedAt: string;
+}
+
 export type AiProtocol = "openai" | "anthropic";
 
 export interface AiConfig {
