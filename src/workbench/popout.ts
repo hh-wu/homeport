@@ -53,28 +53,30 @@ export async function dockPanel(panel: PopoutPanel): Promise<void> {
   usePopoutStore.getState().setDetached(panel, false);
 }
 
+async function syncDetachedFromBackend(): Promise<void> {
+  try {
+    const panels = await ipc.window.popouts();
+    const store = usePopoutStore.getState();
+    store.setDetached("assistant", panels.includes("assistant"));
+    store.setDetached("files", panels.includes("files"));
+  } catch {
+    void 0;
+  }
+}
+
 export function usePopoutSync(): void {
   useEffect(() => {
     if (POPOUT_PANEL) return;
-    let active = true;
-    void ipc.window
-      .popouts()
-      .then((panels) => {
-        if (!active) return;
-        for (const panel of panels) {
-          if (isPopoutPanel(panel)) {
-            usePopoutStore.getState().setDetached(panel, true);
-          }
-        }
-      })
-      .catch(() => {});
+    void syncDetachedFromBackend();
     const pending = listen<string>("popout://closed", (event) => {
       if (isPopoutPanel(event.payload)) {
         usePopoutStore.getState().setDetached(event.payload, false);
       }
     });
+    const onFocus = () => void syncDetachedFromBackend();
+    window.addEventListener("focus", onFocus);
     return () => {
-      active = false;
+      window.removeEventListener("focus", onFocus);
       void pending.then((off) => off());
     };
   }, []);

@@ -51,10 +51,9 @@ pub async fn window_popout(app: tauri::AppHandle, panel: String) -> AppResult<()
 pub fn window_dock(app: tauri::AppHandle, panel: String) -> AppResult<()> {
     let label = popout_label(&panel)?;
     if let Some(window) = app.get_webview_window(label) {
-        window
-            .close()
-            .map_err(|e| AppError::Other(e.to_string()))?;
+        let _ = window.close();
     }
+    let _ = app.emit("popout://closed", panel);
     Ok(())
 }
 
