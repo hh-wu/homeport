@@ -11,7 +11,10 @@ import { fileTools } from "./files";
 import { forwardTools } from "./forwards";
 import { groupTools } from "./groups";
 import { hostTools } from "./hosts";
+import { localTools } from "./local";
+import { memoryTools } from "./memory";
 import { monitorTools } from "./monitor";
+import { planTools } from "./plan";
 import { remoteTools } from "./remote";
 import { snippetTools } from "./snippets";
 import { taskTools } from "./tasks";
@@ -37,6 +40,9 @@ export const ALL_TOOLS: AiTool[] = [
   ...credentialTools,
   ...monitorTools,
   ...remoteTools,
+  ...localTools,
+  ...memoryTools,
+  ...planTools,
   ...settingsTools,
   ...syncTools,
   ...updateTools,
@@ -70,6 +76,9 @@ export const TOOL_GROUPS = [
   { id: "tasks", tools: taskTools },
   { id: "forwards", tools: forwardTools },
   { id: "remote", tools: remoteTools },
+  { id: "local", tools: localTools },
+  { id: "memory", tools: memoryTools },
+  { id: "plan", tools: planTools },
   { id: "credentials", tools: credentialTools },
   { id: "settings", tools: settingsTools },
   { id: "sync", tools: syncTools },

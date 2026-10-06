@@ -65,6 +65,7 @@ import {
 } from "./images";
 import { useAiConfig, useAiModels, useSetAiModel } from "./api";
 import { safeExternalUrl } from "./links";
+import { usePlanStore } from "./plan";
 import { shouldSubmitPrompt } from "./input";
 import { useAiStore } from "./store";
 import { MAX_AI_PROMPT_CHARS, type AgentLogItem } from "./transcript";
@@ -83,6 +84,43 @@ const SUGGESTIONS = [
   "ai.suggestion.resourceUsage",
   "ai.suggestion.systemLogs",
 ] as const;
+
+function PlanStrip() {
+  const { t } = useI18n();
+  const steps = usePlanStore((s) => s.steps);
+  if (steps.length === 0) return null;
+  return (
+    <div
+      aria-label={t("ai.plan")}
+      className="flex shrink-0 flex-col gap-1 border-b border-border-subtle bg-surface px-3 py-2"
+    >
+      {steps.map((step, index) => (
+        <div
+          key={`${index}-${step.content}`}
+          className="flex items-center gap-2 text-xs"
+        >
+          {step.status === "completed" ? (
+            <Check className="size-3.5 shrink-0 text-success" />
+          ) : step.status === "in_progress" ? (
+            <Loader2 className="size-3.5 shrink-0 animate-spin text-info" />
+          ) : (
+            <span className="size-3.5 shrink-0 rounded-full border border-border-strong" />
+          )}
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              step.status === "completed"
+                ? "text-muted-foreground line-through"
+                : "text-foreground",
+            )}
+          >
+            {step.content}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function AssistantPanel({ width }: { width: number }) {
   const { t } = useI18n();
@@ -443,6 +481,8 @@ export function AssistantPanel({ width }: { width: number }) {
           </>
         }
       />
+
+      <PlanStrip />
 
       {!configured ? (
         <EmptyState
