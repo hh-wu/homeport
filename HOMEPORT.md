@@ -38,6 +38,7 @@ AI 助手（右侧 aux 面板）与文件（底部 SFTP 面板）都可以**拖�
 - 拖出状态以 **Rust 窗口管理器为准**（`get_webview_window(label)` 存在即已拖出），前端用 `popout://closed` 事件镜像，不落盘——重启应用后一切归位，没有残留状态
 - 弹窗识别靠 `getCurrentWindow().label`，不依赖 URL 参数；主题、缩放、i18n、react-query 通过复用 `AppProviders` 自动生效
 - AI 面板在有任务运行时禁用拖出（运行中的审批对话框不会藏到看不见的地方）
+- **Tauri v2 的窗口权限按标签授权**：`capabilities/default.json` 的 `windows` 必须包含 `popout-*`，否则弹窗没有 `start-dragging` / `close` / `minimize` 权限，会出现"窗口卡住、拖不动、关不掉"
 
 ## 面板内容
 

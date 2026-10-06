@@ -103,7 +103,7 @@ export function PopoutTitleBar({ panel }: { panel: PopoutPanel }) {
             buttonClass,
             "hover:bg-destructive hover:text-destructive-foreground",
           )}
-          onClick={() => run(() => appWindow.close())}
+          onClick={() => void dockPanel(panel)}
         >
           <X className="size-4" />
         </button>
