@@ -40,6 +40,7 @@ type FieldSpec = {
   labelKey: TKey;
   hintKey?: TKey;
   numeric?: boolean;
+  secret?: boolean;
   picker?: { titleKey: TKey; extensions?: string[] };
 };
 
@@ -119,6 +120,13 @@ const GROUPS: {
       { key: "instanceId", labelKey: "remote.cfgInstanceId" },
       { key: "region", labelKey: "remote.cfgRegion" },
       { key: "pricePerGb", labelKey: "remote.cfgPrice", numeric: true },
+      { key: "aliyunAccessKeyId", labelKey: "remote.cfgAliyunAkId" },
+      {
+        key: "aliyunAccessKeySecret",
+        labelKey: "remote.cfgAliyunAkSecret",
+        hintKey: "remote.cfgAliyunAkHint",
+        secret: true,
+      },
     ],
   },
 ];
@@ -130,7 +138,11 @@ function toDraft(config: RcConfig): Draft {
 }
 
 function toConfig(draft: Draft): RcConfig {
-  return { ...draft, pricePerGb: Number(draft.pricePerGb) || 0 } as RcConfig;
+  return {
+    ...draft,
+    pricePerGb: Number(draft.pricePerGb) || 0,
+    aliyunSecretSet: draft.aliyunSecretSet === "true",
+  } as RcConfig;
 }
 
 export function RemoteSection() {
@@ -193,6 +205,7 @@ function RemoteForm({ config }: { config: RcConfig }) {
   const save = useRcSaveConfig();
   const verify = useRcVerify();
   const [draft, setDraft] = useState<Draft>(() => toDraft(config));
+  const [secretDraft, setSecretDraft] = useState("");
   const [verifying, setVerifying] = useState<VerifySection | null>(null);
   const [results, setResults] = useState<
     Partial<Record<VerifySection, RcVerify>>
@@ -221,6 +234,13 @@ function RemoteForm({ config }: { config: RcConfig }) {
     if (JSON.stringify(next) !== JSON.stringify(toDraft(config))) {
       commit(next);
     }
+  };
+
+  const commitSecret = () => {
+    const value = secretDraft.trim();
+    if (!value) return;
+    setSecretDraft("");
+    commit({ ...draft, aliyunAccessKeySecret: value });
   };
 
   const browse = async (field: FieldSpec) => {
@@ -276,7 +296,21 @@ function RemoteForm({ config }: { config: RcConfig }) {
                 label={t(field.labelKey)}
                 hint={field.hintKey ? t(field.hintKey) : undefined}
               >
-                {field.picker ? (
+                {field.secret ? (
+                  <Input
+                    type="password"
+                    value={secretDraft}
+                    placeholder={
+                      config.aliyunSecretSet
+                        ? t("remote.secretConfigured")
+                        : t("remote.secretEmpty")
+                    }
+                    spellCheck={false}
+                    autoComplete="off"
+                    onChange={(event) => setSecretDraft(event.target.value)}
+                    onBlur={commitSecret}
+                  />
+                ) : field.picker ? (
                   <div className="flex items-center gap-2">
                     <Input
                       value={draft[field.key]}

@@ -39,9 +39,11 @@ const KEY_REGION: &str = "remote.region";
 const KEY_PRICE: &str = "remote.pricePerGb";
 const KEY_PORT_MAP: &str = "remote.portMap";
 const KEY_VISITOR_CONFIG: &str = "remote.visitorConfigPath";
+const KEY_ALIYUN_AK: &str = "remote.aliyunAccessKeyId";
+const KEY_ALIYUN_SK: &str = "remote.aliyunAccessKeySecret";
 
 #[cfg(test)]
-const KEYS: [&str; 15] = [
+const KEYS: [&str; 17] = [
     KEY_FRPC_PATH,
     KEY_FRPC_CONFIG,
     KEY_LOG_PATH,
@@ -57,6 +59,8 @@ const KEYS: [&str; 15] = [
     KEY_PRICE,
     KEY_PORT_MAP,
     KEY_VISITOR_CONFIG,
+    KEY_ALIYUN_AK,
+    KEY_ALIYUN_SK,
 ];
 
 const BSS_HOST: &str = "business.aliyuncs.com";
@@ -82,6 +86,10 @@ pub struct RcConfig {
     price_per_gb: f64,
     port_map: String,
     visitor_config_path: String,
+    aliyun_access_key_id: String,
+    aliyun_access_key_secret: String,
+    #[serde(skip_deserializing)]
+    aliyun_secret_set: bool,
 }
 
 impl Default for RcConfig {
@@ -102,6 +110,9 @@ impl Default for RcConfig {
             price_per_gb: 0.8,
             port_map: DEFAULT_PORT_MAP.into(),
             visitor_config_path: String::new(),
+            aliyun_access_key_id: String::new(),
+            aliyun_access_key_secret: String::new(),
+            aliyun_secret_set: false,
         }
     }
 }
@@ -127,6 +138,8 @@ impl RcConfig {
                 KEY_VISITOR_CONFIG.into(),
                 self.visitor_config_path.clone(),
             ),
+            (KEY_ALIYUN_AK.into(), self.aliyun_access_key_id.clone()),
+            (KEY_ALIYUN_SK.into(), self.aliyun_access_key_secret.clone()),
         ]
     }
 }
@@ -193,6 +206,17 @@ fn validate(config: &RcConfig) -> AppResult<RcConfig> {
             "visitor config",
             true,
         )?,
+        aliyun_access_key_id: text_field(
+            &config.aliyun_access_key_id,
+            "aliyun access key id",
+            true,
+        )?,
+        aliyun_access_key_secret: text_field(
+            &config.aliyun_access_key_secret,
+            "aliyun access key secret",
+            true,
+        )?,
+        aliyun_secret_set: config.aliyun_secret_set,
     })
 }
 
@@ -238,6 +262,12 @@ async fn load_config(db: &SqlitePool) -> AppResult<RcConfig> {
             KEY_VISITOR_CONFIG,
             fallback.visitor_config_path.clone()
         ),
+        aliyun_access_key_id: field!(KEY_ALIYUN_AK, fallback.aliyun_access_key_id.clone()),
+        aliyun_access_key_secret: field!(
+            KEY_ALIYUN_SK,
+            fallback.aliyun_access_key_secret.clone()
+        ),
+        aliyun_secret_set: false,
     };
 
     if !missing.is_empty() {
@@ -251,6 +281,14 @@ async fn save_config(db: &SqlitePool, config: &RcConfig) -> AppResult<RcConfig> 
     let config = validate(config)?;
     settings_repo::set_many(db, &config.entries()).await?;
     Ok(config)
+}
+
+fn redacted(config: RcConfig) -> RcConfig {
+    RcConfig {
+        aliyun_secret_set: !config.aliyun_access_key_secret.is_empty(),
+        aliyun_access_key_secret: String::new(),
+        ..config
+    }
 }
 
 #[derive(Serialize)]
@@ -453,7 +491,12 @@ fn hmac_sha256_hex(key: &[u8], data: &str) -> String {
     hex::encode(mac.finalize().into_bytes())
 }
 
-fn credentials() -> AppResult<(String, String)> {
+fn credentials(config: &RcConfig) -> AppResult<(String, String)> {
+    let ak = config.aliyun_access_key_id.trim();
+    let sk = config.aliyun_access_key_secret.trim();
+    if !ak.is_empty() && !sk.is_empty() {
+        return Ok((ak.to_string(), sk.to_string()));
+    }
     if let (Ok(ak), Ok(sk)) = (
         std::env::var("ALIBABA_CLOUD_ACCESS_KEY_ID"),
         std::env::var("ALIBABA_CLOUD_ACCESS_KEY_SECRET"),
@@ -473,12 +516,13 @@ fn credentials() -> AppResult<(String, String)> {
 }
 
 async fn aliyun_call(
+    config: &RcConfig,
     host: &str,
     action: &str,
     version: &str,
     params: &[(String, String)],
 ) -> AppResult<serde_json::Value> {
-    let (ak, sk) = credentials()?;
+    let (ak, sk) = credentials(config)?;
     let payload_hash = sha256_hex(b"");
 
     let mut headers: Vec<(String, String)> = vec![
@@ -563,6 +607,7 @@ fn dimension(instance_id: &str) -> String {
 async fn latest_metric(config: &RcConfig, metric: &str) -> Option<f64> {
     let host = format!("metrics.{}.aliyuncs.com", config.region);
     let data = aliyun_call(
+        config,
         &host,
         "DescribeMetricLast",
         "2019-01-01",
@@ -590,6 +635,7 @@ async fn month_traffic(config: &RcConfig, metric: &str) -> Option<f64> {
     let format = "%Y-%m-%d %H:%M:%S";
     let host = format!("metrics.{}.aliyuncs.com", config.region);
     let data = aliyun_call(
+        config,
         &host,
         "DescribeMetricList",
         "2019-01-01",
@@ -634,6 +680,7 @@ async fn cloud_snapshot(config: &RcConfig) -> RcCloud {
 
     let ecs_host = format!("ecs.{}.aliyuncs.com", config.region);
     match aliyun_call(
+        config,
         &ecs_host,
         "DescribeInstances",
         "2014-05-26",
@@ -671,12 +718,13 @@ async fn cloud_snapshot(config: &RcConfig) -> RcCloud {
         Err(error) => snapshot.errors.push(format!("ecs: {error}")),
     }
 
-    match aliyun_call(BSS_HOST, "QueryAccountBalance", "2017-12-14", &[]).await {
+    match aliyun_call(config, BSS_HOST, "QueryAccountBalance", "2017-12-14", &[]).await {
         Ok(data) => snapshot.balance = data["Data"]["AvailableAmount"].as_str().map(str::to_string),
         Err(error) => snapshot.errors.push(format!("balance: {error}")),
     }
 
     match aliyun_call(
+        config,
         BSS_HOST,
         "DescribeInstanceBill",
         "2017-12-14",
@@ -1022,7 +1070,7 @@ pub async fn rc_server_state(state: tauri::State<'_, AppState>) -> AppResult<RcS
 
 #[tauri::command]
 pub async fn rc_get_config(state: tauri::State<'_, AppState>) -> AppResult<RcConfig> {
-    load_config(&state.db).await
+    load_config(&state.db).await.map(redacted)
 }
 
 #[tauri::command]
@@ -1030,7 +1078,16 @@ pub async fn rc_set_config(
     state: tauri::State<'_, AppState>,
     config: RcConfig,
 ) -> AppResult<RcConfig> {
-    save_config(&state.db, &config).await
+    let config = if config.aliyun_access_key_secret.is_empty() {
+        let stored = load_config(&state.db).await?;
+        RcConfig {
+            aliyun_access_key_secret: stored.aliyun_access_key_secret,
+            ..config
+        }
+    } else {
+        config
+    };
+    save_config(&state.db, &config).await.map(redacted)
 }
 
 #[tauri::command]
@@ -1303,6 +1360,7 @@ async fn verify_cloud(config: &RcConfig) -> RcVerify {
 
     let host = format!("ecs.{}.aliyuncs.com", config.region);
     match aliyun_call(
+        config,
         &host,
         "DescribeInstances",
         "2014-05-26",
@@ -1467,6 +1525,32 @@ mod tests {
     use super::*;
 
     #[test]
+    fn aliyun_config_credentials_take_precedence() {
+        let config = RcConfig {
+            aliyun_access_key_id: " cfg-ak ".into(),
+            aliyun_access_key_secret: " cfg-sk ".into(),
+            ..RcConfig::default()
+        };
+        let (ak, sk) = credentials(&config).unwrap();
+        assert_eq!(ak, "cfg-ak");
+        assert_eq!(sk, "cfg-sk");
+    }
+
+    #[test]
+    fn redaction_hides_the_aliyun_secret() {
+        let config = RcConfig {
+            aliyun_access_key_secret: "sk".into(),
+            ..RcConfig::default()
+        };
+        let view = redacted(config);
+        assert!(view.aliyun_secret_set);
+        assert!(view.aliyun_access_key_secret.is_empty());
+
+        let empty = redacted(RcConfig::default());
+        assert!(!empty.aliyun_secret_set);
+    }
+
+    #[test]
     fn rejects_invalid_configuration() {
         let mut config = RcConfig {
             frpc_path: "not-a-path".into(),
@@ -1589,7 +1673,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn aliyun_signing_reaches_the_account_endpoint() {
-        let data = aliyun_call(BSS_HOST, "QueryAccountBalance", "2017-12-14", &[])
+        let data = aliyun_call(&RcConfig::default(), BSS_HOST, "QueryAccountBalance", "2017-12-14", &[])
             .await
             .expect("account balance");
         assert!(data["Data"]["AvailableAmount"].is_string());

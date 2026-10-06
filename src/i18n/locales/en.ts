@@ -214,6 +214,12 @@ export const en = {
     cfgInstanceId: "ECS instance ID",
     cfgRegion: "Region",
     cfgPrice: "Traffic price per GB",
+    cfgAliyunAkId: "AccessKey ID",
+    cfgAliyunAkSecret: "AccessKey secret",
+    cfgAliyunAkHint:
+      "Used for cloud queries and takes precedence over environment variables and credentials.json",
+    secretConfigured: "Configured — enter a new value to replace",
+    secretEmpty: "Not configured",
     cfgSave: "Save configuration",
     cfgSaved: "Configuration saved",
     cfgFailed: "Could not save the configuration",

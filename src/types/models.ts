@@ -480,6 +480,9 @@ export interface RcConfig {
   pricePerGb: number;
   portMap: string;
   visitorConfigPath: string;
+  aliyunAccessKeyId: string;
+  aliyunAccessKeySecret: string;
+  aliyunSecretSet: boolean;
 }
 
 export type AiProtocol = "openai" | "anthropic";
