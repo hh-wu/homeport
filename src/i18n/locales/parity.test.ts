@@ -70,6 +70,7 @@ describe("locale parity", () => {
       "JSON",
       "L",
       "MB",
+      "MCP",
       "MinIO",
       "Nextcloud",
       "OAuth",

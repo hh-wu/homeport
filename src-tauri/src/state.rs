@@ -6,6 +6,7 @@ use parking_lot::Mutex;
 use sqlx::SqlitePool;
 use tokio::sync::oneshot;
 
+use crate::mcp::McpState;
 use crate::pty::PtyManager;
 use crate::sftp::{SftpManager, TransferCancel};
 use crate::ssh::forward::ForwardManager;
@@ -52,6 +53,8 @@ pub struct AppState {
 
     pub batch_cancels: Mutex<HashMap<String, CancelEntry>>,
 
+    pub mcp: McpState,
+
     pub task_cancels: Mutex<HashMap<String, Arc<TransferCancel>>>,
 
     request_generation: AtomicU64,
@@ -75,6 +78,7 @@ impl AppState {
             update: UpdateManager::new(),
             ai_cancels: Mutex::new(HashMap::new()),
             batch_cancels: Mutex::new(HashMap::new()),
+            mcp: McpState::default(),
             task_cancels: Mutex::new(HashMap::new()),
             request_generation: AtomicU64::new(0),
             sync_oauth: Mutex::new(SyncOAuthSlot::default()),

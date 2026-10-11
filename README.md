@@ -73,6 +73,10 @@ Local, remote, and dynamic (SOCKS) forwards, defined once and started with a cli
 
 Bring your own provider — any OpenAI- or Anthropic-compatible endpoint — and the assistant can see your workbench, suggest and run commands, manage files, and build automation tasks for you. It operates under a strict approval model: reading terminal or remote file content always requires consent, every other action waits for your approval unless you enable autonomous mode, and even then it pauses again after touching untrusted content.
 
+### MCP server
+
+External AI agents such as Claude Code or Cursor can drive your saved hosts too. Enable the built-in MCP server in settings, hand your agent a bearer token, and it can list hosts and run commands over Sageport's authenticated SSH connections — without ever seeing a password or key. Write and dangerous commands wait for your approval in the app, and every call lands in a local audit log.
+
 ### Sync and backup
 
 Optionally sync your setup between devices through GitHub Gist, Google Drive, OneDrive, WebDAV, or S3 — encrypted with your passphrase before anything leaves the device. Prefer to stay offline? Export a single encrypted backup file.

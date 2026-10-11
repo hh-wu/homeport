@@ -1100,6 +1100,22 @@ export const zhCN: Dictionary = {
     },
   },
 
+  mcp: {
+    approval: {
+      title: "允许 {client} 执行此命令吗",
+      description:
+        "{client} 请求通过 MCP 服务器执行一条{risk}命令。批准前请检查命令内容和目标主机。",
+      hosts: "目标主机：{hosts}",
+      risk: {
+        read: "只读",
+        write: "写入",
+        dangerous: "危险",
+      },
+      approve: "批准",
+      deny: "拒绝",
+    },
+  },
+
   settings: {
     title: "设置",
     persistence: {
@@ -1111,6 +1127,7 @@ export const zhCN: Dictionary = {
       network: "网络",
       keybindings: "快捷键",
       ai: "AI",
+      mcp: "MCP",
       sync: "同步",
       about: "关于",
     },
@@ -1132,6 +1149,38 @@ export const zhCN: Dictionary = {
         unknown: "不支持设置“{key}”。请将其移除后再保存。",
         invalid: "请为“{key}”输入有效值后再保存。",
       },
+    },
+    mcp: {
+      serverTitle: "MCP 服务器",
+      serverDescription:
+        "让外部 AI Agent 通过 Model Context Protocol 在已保存的主机上执行命令。",
+      enableLabel: "MCP 服务器",
+      enable: "启用 MCP 服务器",
+      enableHint:
+        "在 127.0.0.1 上监听，供 Claude Code、Cursor 等 MCP 客户端接入。",
+      portLabel: "端口",
+      portHint: "范围 1024 到 65535。修改后服务器会以新端口重启。",
+      portInvalid: "请输入 1024 到 65535 之间的端口",
+      policyLabel: "审批策略",
+      policyHint: "选择哪些命令在执行前需要你的确认。",
+      policy: {
+        confirmAll: "每条命令都需确认",
+        confirmWrite: "写入与危险命令需确认",
+        confirmDangerous: "仅危险命令需确认",
+        bypass: "全部免确认",
+      },
+      statusRunning: "正在监听 127.0.0.1:{port}",
+      statusStopped: "MCP 服务器已停止",
+      copyEndpoint: "复制端点地址",
+      tokensTitle: "访问令牌",
+      tokensDescription:
+        "客户端使用 bearer 令牌认证。令牌只保存哈希值，明文仅显示一次。",
+      tokenNamePlaceholder: "客户端名称，例如 Claude Code",
+      generateToken: "生成令牌",
+      revokeToken: "吊销令牌",
+      tokenCreatedHint: "请立即复制 {name} 的令牌，它只会显示这一次。",
+      copyToken: "复制令牌",
+      saveError: "MCP 设置保存失败",
     },
     proxy: {
       title: "连接代理",

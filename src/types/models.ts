@@ -652,3 +652,39 @@ export type UpdateStatus =
       operation: "check" | "install";
       message: string;
     };
+
+export type McpPolicy =
+  "confirmAll" | "confirmWrite" | "confirmDangerous" | "bypass";
+
+export interface McpStateView {
+  enabled: boolean;
+  port: number;
+  policy: McpPolicy;
+  running: boolean;
+  listeningPort: number | null;
+}
+
+export interface McpConfigInput {
+  enabled: boolean;
+  port: number;
+  policy: McpPolicy;
+}
+
+export interface McpTokenView {
+  name: string;
+  createdAt: string;
+}
+
+export type McpRisk = "read" | "write" | "dangerous";
+
+export interface McpApprovalEvent {
+  requestId: string;
+  client: string;
+  command: string;
+  hosts: string[];
+  risk: McpRisk;
+}
+
+export interface McpApprovalClosedEvent {
+  requestId: string;
+}

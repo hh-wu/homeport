@@ -22,6 +22,10 @@ import {
   listenPasswordPrompts,
   usePasswordPromptStore,
 } from "@/features/terminal/password-prompt";
+import {
+  listenMcpApprovals,
+  useMcpApprovalStore,
+} from "@/features/mcp/approval";
 import { ActivityBar } from "./ActivityBar";
 import { EditorArea } from "./EditorArea";
 import { FONT_SYNC_KEY, useFontStore } from "./font";
@@ -90,6 +94,12 @@ const PasswordPromptDialog = lazy(() =>
   })),
 );
 
+const McpApprovalDialog = lazy(() =>
+  import("@/features/mcp/McpApprovalDialog").then((module) => ({
+    default: module.McpApprovalDialog,
+  })),
+);
+
 const Toaster = lazy(() =>
   import("@/components/ui/toaster").then((module) => ({
     default: module.Toaster,
@@ -125,6 +135,14 @@ export function Workbench() {
   useEffect(
     () =>
       installWindowListener(listenPasswordPrompts, (error) =>
+        toast.error(t("windowControls.listenerError"), errorMessage(error)),
+      ),
+    [t],
+  );
+
+  useEffect(
+    () =>
+      installWindowListener(listenMcpApprovals, (error) =>
         toast.error(t("windowControls.listenerError"), errorMessage(error)),
       ),
     [t],
@@ -259,10 +277,12 @@ export function Workbench() {
   const setSettingsSection = useOverlayStore((s) => s.setSettingsSection);
   const hasHostKeyPrompt = useHostKeyStore((s) => s.queue.length > 0);
   const hasPasswordPrompt = usePasswordPromptStore((s) => s.queue.length > 0);
+  const hasMcpApproval = useMcpApprovalStore((s) => s.queue.length > 0);
 
   const shownOverlay = useDialogSnapshot(Boolean(overlay), overlay);
   const hostKeyMounted = useKeepMounted(hasHostKeyPrompt);
   const passwordMounted = useKeepMounted(hasPasswordPrompt);
+  const mcpApprovalMounted = useKeepMounted(hasMcpApproval);
 
   return (
     <div className="workbench flex h-full flex-col bg-surface text-surface-foreground">
@@ -407,6 +427,13 @@ export function Workbench() {
         <ErrorBoundary>
           <Suspense fallback={null}>
             <PasswordPromptDialog />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+      {mcpApprovalMounted && (
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <McpApprovalDialog />
           </Suspense>
         </ErrorBoundary>
       )}

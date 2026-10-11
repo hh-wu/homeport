@@ -1130,6 +1130,22 @@ export const en = {
     },
   },
 
+  mcp: {
+    approval: {
+      title: "Allow {client} to run this command?",
+      description:
+        "{client} asks to run a {risk} command through the MCP server. Review the command and the target hosts before approving.",
+      hosts: "Hosts: {hosts}",
+      risk: {
+        read: "read-only",
+        write: "write",
+        dangerous: "dangerous",
+      },
+      approve: "Approve",
+      deny: "Deny",
+    },
+  },
+
   settings: {
     title: "Settings",
     persistence: {
@@ -1141,6 +1157,7 @@ export const en = {
       network: "Network",
       keybindings: "Shortcuts",
       ai: "AI",
+      mcp: "MCP",
       sync: "Sync",
       about: "About",
     },
@@ -1163,6 +1180,38 @@ export const en = {
         unknown: '"{key}" is not a supported setting. Remove it before saving.',
         invalid: 'Enter a valid value for "{key}" before saving.',
       },
+    },
+    mcp: {
+      serverTitle: "MCP server",
+      serverDescription:
+        "Let external AI agents run commands on saved hosts through MCP.",
+      enableLabel: "MCP server",
+      enable: "Enable MCP server",
+      enableHint:
+        "Listen on 127.0.0.1 for MCP clients such as Claude Code or Cursor.",
+      portLabel: "Port",
+      portHint: "Between 1024 and 65535. The server restarts on the new port.",
+      portInvalid: "Enter a port between 1024 and 65535",
+      policyLabel: "Approval policy",
+      policyHint: "Choose which commands need your approval before they run.",
+      policy: {
+        confirmAll: "Confirm every command",
+        confirmWrite: "Confirm write and dangerous commands",
+        confirmDangerous: "Confirm dangerous commands only",
+        bypass: "Run without confirmation",
+      },
+      statusRunning: "Listening on 127.0.0.1:{port}",
+      statusStopped: "The MCP server is stopped",
+      copyEndpoint: "Copy endpoint URL",
+      tokensTitle: "Access tokens",
+      tokensDescription:
+        "Clients authenticate with a bearer token. Tokens are stored as hashes and shown only once.",
+      tokenNamePlaceholder: "Client name",
+      generateToken: "Generate token",
+      revokeToken: "Revoke token",
+      tokenCreatedHint: "Copy the token for {name} now. It is shown only once.",
+      copyToken: "Copy token",
+      saveError: "Failed to save MCP settings",
     },
     proxy: {
       title: "Connection proxy",

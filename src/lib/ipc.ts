@@ -32,6 +32,11 @@ import type {
   IdentityInput,
   KeyFile,
   MonitorStatsEvent,
+  McpApprovalClosedEvent,
+  McpApprovalEvent,
+  McpConfigInput,
+  McpStateView,
+  McpTokenView,
   PortForward,
   PortForwardInput,
   ProxyProfile,
@@ -204,6 +209,25 @@ export const ipc = {
       enabledTools: string[];
       maxHistoryTokens: number | null;
     }) => invoke<void>("settings_apply_json", { input }),
+  },
+  mcp: {
+    getState: () => invoke<McpStateView>("mcp_get_state"),
+    setConfig: (input: McpConfigInput) =>
+      invoke<McpStateView>("mcp_set_config", { input }),
+    generateToken: (name: string) =>
+      invoke<string>("mcp_generate_token", { name }),
+    revokeToken: (name: string) => invoke<void>("mcp_revoke_token", { name }),
+    listTokens: () => invoke<McpTokenView[]>("mcp_list_tokens"),
+    resolveApproval: (requestId: string, approved: boolean) =>
+      invoke<void>("mcp_resolve_approval", { requestId, approved }),
+    onApprovalRequest: (handler: (event: McpApprovalEvent) => void) =>
+      listen<McpApprovalEvent>("mcp:approval-request", (event) =>
+        handler(event.payload),
+      ),
+    onApprovalClosed: (handler: (event: McpApprovalClosedEvent) => void) =>
+      listen<McpApprovalClosedEvent>("mcp:approval-closed", (event) =>
+        handler(event.payload),
+      ),
   },
   proxies: {
     state: () => invoke<ProxyState>("proxies_state"),

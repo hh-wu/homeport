@@ -9,6 +9,7 @@ pub mod history;
 pub mod hosts;
 pub mod identities;
 pub mod keys;
+pub mod mcp;
 pub mod monitor;
 pub mod proxies;
 pub mod pty;

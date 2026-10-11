@@ -5,6 +5,7 @@ import {
   Info,
   Keyboard,
   Network,
+  PlugZap,
   RefreshCw,
   Settings2,
   Sparkles,
@@ -47,6 +48,7 @@ import {
 } from "@/features/ai/tools";
 import { SyncSection } from "@/features/sync/SyncSection";
 import { ProxySettings } from "@/features/proxies/ProxySettings";
+import { McpSection } from "@/features/mcp/McpSection";
 import { AboutSection } from "./AboutSection";
 import { DraftInput } from "./DraftInput";
 import { GeneralSection } from "./GeneralSection";
@@ -78,6 +80,11 @@ const NAV: {
     id: "ai",
     labelKey: "settings.nav.ai",
     icon: Sparkles,
+  },
+  {
+    id: "mcp",
+    labelKey: "settings.nav.mcp",
+    icon: PlugZap,
   },
   {
     id: "sync",
@@ -221,6 +228,7 @@ function SettingsPage({
             {section === "network" && <ProxySettings />}
             {section === "keybindings" && <KeybindingsSection />}
             {section === "ai" && <AiSection />}
+            {section === "mcp" && <McpSection />}
             {section === "sync" && <SyncSection />}
             {section === "about" && <AboutSection />}
           </main>

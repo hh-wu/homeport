@@ -6,6 +6,7 @@ mod domain;
 mod durable_fs;
 mod error;
 mod legacy;
+mod mcp;
 #[cfg(target_os = "macos")]
 mod menu;
 mod network;
@@ -42,6 +43,9 @@ fn cleanup_orphaned_sessions(state: &AppState) {
     state.connection_prompts.passwords.lock().clear();
     state.ai_cancels.lock().clear();
     state.batch_cancels.lock().clear();
+    for (_, sender) in state.mcp.approvals.lock().drain() {
+        let _ = sender.send(false);
+    }
     for (_, cancel) in state.task_cancels.lock().drain() {
         cancel.cancel();
     }
@@ -148,6 +152,13 @@ pub fn run() {
             tauri::async_runtime::spawn(update::run_periodic(handle));
             commands::sync::run_periodic(app.handle().clone());
 
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(error) = mcp::sync_server(&handle).await {
+                    eprintln!("mcp autostart failed: {error}");
+                }
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -233,6 +244,12 @@ pub fn run() {
             commands::clipboard::clipboard_save_image,
             commands::batch::hosts_run_command,
             commands::batch::hosts_cancel_run,
+            commands::mcp::mcp_get_state,
+            commands::mcp::mcp_set_config,
+            commands::mcp::mcp_generate_token,
+            commands::mcp::mcp_revoke_token,
+            commands::mcp::mcp_list_tokens,
+            commands::mcp::mcp_resolve_approval,
             commands::history::history_add,
             commands::history::history_list,
             commands::history::history_search,
